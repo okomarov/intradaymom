@@ -1,0 +1,3 @@
+[submodule "utils/clusterreg"]
+	path = utils/clusterreg
+	url = https://github.com/okomarov/clusterreg
