@@ -1,0 +1,14 @@
+*.mat
+*.zip
+*.mexw64
+
+*.aux
+*.log
+*.synctex.gz
+
+/data
+/results
+/old
+
+
+
