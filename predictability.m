@@ -1,30 +1,46 @@
 %% Opts
-OPT_RANGES = [930, 1000, 1030, 1100, 1130, 1200, 1230, 1300, 1330, 1400, 1430, 1500,1530]';
+OPT_NOMICRO = true;
+
+OPT_RANGES = [930, 1000, 1030, 1100, 1130, 1200, 1230, 1300, 1330, 1400, 1430, 1500,1530]'*100;
 OPT_LAG    = 1;
 
 OPT_STANDARDIZE = true;
-OPT_VOL_AVG     = 'e';
+OPT_VOL_AVG     = 's';
 OPT_LAG_VOL     = 40;
 %% Data
 
+% Index data
+mst = loadresults('master');
+
+% Taq open price
+taq                   = loadresults('price_fl');
+[idx,pos]             = ismembIdDate(mst.Permno, mst.Date,taq.Permno,taq.Date);
+mst.FirstPrice(idx,1) = taq.FirstPrice(pos(idx));
+mst.LastPrice(idx,1)  = taq.LastPrice(pos(idx));
+
+if OPT_NOMICRO
+    idx = isMicrocap(mst, 'LastPrice',OPT_LAG);
+    mst = mst(~idx,:);
+end
+
 % Returns
-ret        = loadresults('halfHourRet930');
-ret.T93000 = double(ret.T93000);
-for ii = 2:numel(OPT_RANGES)
+ret = mst(:,{'Permno','Date'});
+ret = ret(ret.Permno ~= 84398,:);
+for ii = 1:numel(OPT_RANGES)
     tmp         = loadresults(sprintf('halfHourRet%d',OPT_RANGES(ii)));
     [~,pos]     = ismembIdDate(ret.Permno, ret.Date, tmp.Permno, tmp.Date);
-    tname       = sprintf('T%d',OPT_RANGES(ii)*100);
+    tname       = sprintf('T%d',OPT_RANGES(ii));
     ret.(tname) = double(tmp.(tname)(pos));
 end
 ret = sortrows(ret,{'Permno','Date'});
 
 % Variance
-vol           = loadresults('halfHourVol930');
-vol.RV5_93000 = double(vol.RV5_93000);
-for ii = 2:numel(OPT_RANGES)
+vol = mst(:,{'Permno','Date'});
+vol = vol(vol.Permno ~= 84398,:);
+for ii = 1:numel(OPT_RANGES)
     tmp         = loadresults(sprintf('halfHourVol%d',OPT_RANGES(ii)));
     [~,pos]     = ismembIdDate(vol.Permno, vol.Date, tmp.Permno, tmp.Date);
-    tname       = sprintf('RV5_%d',OPT_RANGES(ii)*100);
+    tname       = sprintf('RV5_%d',OPT_RANGES(ii));
     vol.(tname) = double(tmp.(tname)(pos));
 end
 vol = sortrows(vol,{'Permno','Date'});
