@@ -25,11 +25,11 @@ switch type
         end_hpr(col)   = s.price_fl.LastPrice(idx);
     
     case 'taq_vwap'
-        [idx,col]      = ismember(s.vwap.Permno, permnos);
-        st_signal(col) = s.vwap.T93000(idx);
-        en_signal(col) = s.vwap.T120000(idx);
-        st_hpr(col)    = s.vwap.T123000(idx);
-        end_hpr(col)   = s.vwap.T153000(idx);
+        [~,col]        = ismember(s.START_SIGNAL.Permno, permnos);
+        st_signal(col) = getFieldT(s.START_SIGNAL);
+        en_signal(col) = getFieldT(s.END_SIGNAL);
+        st_hpr(col)    = getFieldT(s.START_HPR);
+        end_hpr(col)   = getFieldT(s.END_HPR);
     
     case 'taq_exact/vwap'
         % Signal
@@ -50,4 +50,10 @@ switch type
         
     
 end
+end
+
+function f = getFieldT(s)
+f   = fieldnames(s);
+idx = strncmp('T',f,1);
+f   = s.(f{idx});
 end
