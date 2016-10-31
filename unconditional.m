@@ -1,14 +1,14 @@
 %% Options
 OPT_LAGDAY             = 1;
+OPT_OUTLIERS_THRESHOLD = 5;
+OPT_HASWEIGHTS         = true;
 OPT_NOMICRO            = true;
-OPT_OUTLIERS_THRESHOLD = 10;
-OPT_HASWEIGHTS         = false;
 
 OPT_CHECK_CRSP = true;
 
 OPT_PTFNUM_UN = 5;
 
-EDGES = serial2hhmmss((9.5:0.5:16)/24);
+OPT_RANGES = [930, 1000, 1030, 1100, 1130, 1200, 1230, 1300, 1330, 1400, 1430, 1500, 1530]'*100; 
 %% Intraday-average: data
 taq = loadresults('price_fl');
 
@@ -25,6 +25,7 @@ if OPT_CHECK_CRSP
     taq       = taq(ib,:);
     isequal(crsp.Date, taq.Date)
     isequal(crsp.Permno, taq.Permno)
+    permnos = unique(taq.Permno);
 end
 
 % Get market caps
@@ -33,29 +34,30 @@ cap = struct('Permnos', {getVariableNames(cap(:,2:end))}, ...
     'Dates', cap{:,1},...
     'Data', cap{:,2:end});
 
-% FF49-industries classification
-ff49 = getFF49IndustryCodes(taq,1);
-ff49 = struct('Permnos', {getVariableNames(ff49(:,2:end))}, ...
-    'Dates', ff49{:,1},...
-    'Data', ff49{:,2:end});
+% % FF49-industries classification
+% ff49 = getFF49IndustryCodes(taq,1);
+% ff49 = struct('Permnos', {getVariableNames(ff49(:,2:end))}, ...
+%     'Dates', ff49{:,1},...
+%     'Data', ff49{:,2:end});
 
 % Unstack returns
-taq.Ret = taq.LastPrice./taq.FirstPrice-1;
-ret_taq = sortrows(unstack(taq (:,{'Permno','Date','Ret'}), 'Ret','Permno'),'Date');
+myunstack = @(tb,vname) sortrows(unstack(tb(:,{'Permno','Date',vname}),vname,'Permno'),'Date');
+taq.Ret = double(taq.LastPrice)./double(taq.FirstPrice)-1;
+ret_taq = myunstack(taq, 'Ret');
 ret_taq = ret_taq{:,2:end};
 if OPT_CHECK_CRSP
-    crsp.Ret = crsp.Prc./crsp.Openprc-1;
-    ret_crsp = sortrows(unstack(crsp(:,{'Permno','Date','Ret'}), 'Ret','Permno'),'Date');
+    crsp.Ret = double(crsp.Prc)./double(crsp.Openprc)-1;
+    ret_crsp = myunstack(crsp, 'Ret');
     ret_crsp = ret_crsp{:,2:end};
 else
     ret_crsp = NaN(size(ret_taq));
 end
 
-% Filter outliers
-iout           = ret_taq+1 > OPT_OUTLIERS_THRESHOLD |...
-                 1./(ret_taq+1) > OPT_OUTLIERS_THRESHOLD;
-ret_taq(iout)  = NaN;
-ret_crsp(iout) = NaN;
+% % Filter outliers
+% iout           = ret_taq+1 > OPT_OUTLIERS_THRESHOLD |...
+%                  1./(ret_taq+1) > OPT_OUTLIERS_THRESHOLD;
+% ret_taq(iout)  = NaN;
+% ret_crsp(iout) = NaN;
 %% Intraday-average: return
 if OPT_HASWEIGHTS
     w = bsxfun(@rdivide, cap.Data, nansum(cap.Data,2));
@@ -97,9 +99,9 @@ ptfret_vw = accumarray(subs, ret_taq_w(:),[],@nansum);
 ptfret_vw = ptfret_vw(:,2:end);
 
 [dict,des] = getFF49Classification;
-labels = regexprep(des.FF49_ShortLabel,'[, ]','');
+labels     = regexprep(des.FF49_ShortLabel,'[, ]','');
 
-c = corr(double(ptfret_vw)); 
+c                   = corr(double(ptfret_vw)); 
 c(logical(eye(49))) = NaN;
 % schemaball(c .* double(c > .65),labels)
 
@@ -122,24 +124,19 @@ plot(G,'layout','force')
 % fprintf(fid,fmt, B{:});
 % fclose(fid)
 
-
-
 save .\results\avg_ts_industry_vw ptfret_vw
-
 %% Data
-datapath = '..\data\TAQ\sampled\5min\nobad_vw';
-
 % Index data
 mst = loadresults('master');
 
 % Taq open price
-taq            = loadresults('price_fl');
-[~,pos]        = ismembIdDate(mst.Permno, mst.Date,taq.Permno,taq.Date);
-mst.FirstPrice = taq.FirstPrice(pos);
-mst.LastPrice  = taq.LastPrice(pos);
+taq                   = loadresults('price_fl');
+[idx,pos]             = ismembIdDate(mst.Permno, mst.Date,taq.Permno,taq.Date);
+mst.FirstPrice(idx,1) = taq.FirstPrice(pos(idx));
+mst.LastPrice(idx,1)  = taq.LastPrice(pos(idx));
 
 if OPT_NOMICRO
-    idx = isMicrocap(mst,'LastPrice',OPT_LAGDAY);
+    idx = isMicrocap(mst, 'LastPrice',OPT_LAGDAY);
     mst = mst(~idx,:);
 end
 
@@ -151,56 +148,29 @@ end
 permnos = unique(mst.Permno);
 nseries = numel(permnos);
 
-% Cached
-[mst, dates] = cache2cell(mst,  mst.Date);
+% Dates
+dates = unique(mst.Date);
 
-%%
-N   = numel(dates);
-avg = NaN(N, numel(EDGES)-1);
+%% Half-hour averages
+avg      = table();
+avg.Date = dates;
 
-tic
-poolStartup(8,'AttachedFiles',{'poolStartup.m'})
-parfor ii = 1:N
-    disp(ii)
-    
-    % Get 5 min data
-    tmp = getTaqData([],[],[],[],[],datapath,mst{ii},false);
-    
-    % Unstack
-    Permno = tmp.Permno(1:79:end);
-    HHMMSS = serial2hhmmss(tmp.Datetime(1:79));
-    price  = reshape(tmp.Price,79,[]);
-    
-    % Add first price
-    row        = max(sum(isnan(price)),1);
-    [~, col]   = ismember(mst{ii}.Permno, Permno);
-    pos        = sub2ind(size(price), row(:), col(:));
-    price(pos) = mst{ii}.FirstPrice;
-    
-    % Filter outliers
-    ret      = price(2:end,:)./price(1:end-1,:)-1;
-    idx      = ret          > OPT_OUTLIERS_THRESHOLD |...
-               1./(ret+1)-1 > OPT_OUTLIERS_THRESHOLD;
-    ret(idx) = NaN;
-    
-    % Take 30 min returns
-    [~,~,row] = histcounts(HHMMSS(1:end-1),EDGES);
-    col       = 1:size(ret,2);
-    [row,col] = ndgrid(row, col);
-    ret       = accumarray([row(:),col(:)], nan2zero(ret(:))+1,[],@prod)-1;
-
+% Returns
+for ii = 1:numel(OPT_RANGES)
+    tmp       = loadresults(sprintf('halfHourRet%d',OPT_RANGES(ii)));
+    idx       = ismembIdDate(tmp.Permno, tmp.Date, mst.Permno, mst.Date);
+    tmp       = tmp(idx,:);
+    tname     = sprintf('T%d',OPT_RANGES(ii));
+    tmp       = tmp(~isnan(tmp.(tname)),:);
+    [idx,pos] = ismember(tmp.Date, avg.Date);
     if OPT_HASWEIGHTS
-        % Intersect permnos
-        [~,pos]   = ismember(Permno, mst{ii}.Permno);
-        weight    = mst{ii}.Cap(pos);
-        weight    = weight(:)'/sum(weight);
-        ret       = bsxfun(@times, ret, weight);
-        avg(ii,:) = sum(ret,2);
+        tmp         = getMktCap(tmp,OPT_LAGDAY);
+        avg.(tname) = double(accumarray(pos(idx), tmp.(tname)(idx).* tmp.Cap(idx))) ./ ...
+                      double(accumarray(pos(idx), tmp.Cap(idx)));
     else
-        avg(ii,:) = mean(ret,2);
+        avg.(tname) = double(accumarray(pos(idx), tmp.(tname)(idx), [],@mean));
     end
 end
-toc
 
 if OPT_HASWEIGHTS
     save .\results\avg_ts_30min_vw avg
@@ -210,6 +180,8 @@ end
 %% Plot
 avg_vw     = loadresults('avg_ts_30min_vw');
 avg_ew     = loadresults('avg_ts_30min_ew');
+avg_ew     = avg_ew{:,2:end};
+avg_vw     = avg_vw{:,2:end};
 avg_vw_all = loadresults('avg_ts_vw');
 avg_ew_all = loadresults('avg_ts_ew');
 
@@ -217,25 +189,25 @@ avg_ew_all = loadresults('avg_ts_ew');
 figure
 f = 252*100;
 
-ha = subplot(211);
-[~, se] = nwse(avg_ew*f);
-
-errorbar(nanmean(avg_ew)*f, nwse(avg_ew)*sqrt(252))
-(nanmean(avg_ew)*f)
+% ha      = subplot(211);
+% [~, se] = nwse(avg_ew*f);
+% 
+% errorbar(nanmean(avg_ew)*f, nwse(avg_ew)*sqrt(252))
+% (nanmean(avg_ew)*f)
 
 subplot(211)
 bar(nanmean(avg_ew)*f)
 hold on
 bar(14, mean(avg_ew_all(:,2))*f,'r')
 title('Average annualized % returns - EW')
-set(gca,'XtickLabel',EDGES(1:end-1)/100)
+set(gca,'XtickLabel',OPT_RANGES/100)
 
 subplot(212)
 bar(nanmean(avg_vw)*f)
 hold on
 bar(14, mean(avg_vw_all(:,2))*f,'r')
 title('Average annualized % returns - VW')
-set(gca,'XtickLabel',EDGES(1:end-1)/100)
+set(gca,'XtickLabel',OPT_RANGES/100)
 legend('half-hour','open-to-close','Location','NorthWest')
 
 % Cumulated returns
