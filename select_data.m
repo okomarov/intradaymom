@@ -92,13 +92,10 @@ for r = 1:size(ranges,1)
     movefile(oldName,newName)
 end
 
-opt.Range     = [123000,160000];
-[~, filename] = AnalyzeImom('volInRange',[],master,'..\data\TAQ\sampled\5min\nobad_vw',[],[],opt);
-
-% Rename file
-oldName = fullfile('results',filename);
-newName = fullfile('results', regexprep(filename, '.mat', sprintf('%d-%d.mat',opt.Range)));
-movefile(oldName,newName)
+opt.Range = [123000,160000];
+res       = AnalyzeImom('volInRange',[],master,'..\data\TAQ\sampled\5min\nobad_vw',[],[],opt);
+res       = sortrows(res, {'Permno','Date'});
+save('results\volInRange123000-160000', 'res')
 
 %% Fama and french
 datasets = {'F-F_Research_Data_5_Factors_2x3_daily_TXT.zip',...

@@ -19,6 +19,10 @@ START_SIGNAL = 930;
 END_SIGNAL   = 1200;
 START_HPR    = 1230;
 END_HPR      = 1530;
+
+OPT_VOL_AVG = 'e';
+OPT_LAG_VOL = 40;
+OPT_TARGET_VOL = 0.4;
 %% Data
 datapath = '..\data\TAQ\sampled\5min\nobad';
 
@@ -41,6 +45,15 @@ price_fl  = price_fl(ib,:);
 cap       = getMktCap(mst,OPT_LAGDAY);
 myunstack = @(tb,vname) sortrows(unstack(tb(:,{'Permno','Date',vname}),vname,'Permno'),'Date');
 cap       = myunstack(cap,'Cap');
+
+% 40-day moving average lagged 1 standard deviation
+vol            = loadresults('volInRange123000-160000');
+[idx,pos]      = ismembIdDate(vol.Permno, vol.Date, mst.Permno, mst.Date);
+vol            = vol(idx,:);
+vol.Sigma      = sqrt(tsmovavg(vol.RV5,OPT_VOL_AVG, OPT_LAG_VOL,1));
+SHIFT          = OPT_LAG_VOL-1+OPT_LAGDAY;
+vol(:,[1,2,4]) = lagpanel(vol(:,[1,2,4]),'Permno',SHIFT);
+vol            = myunstack(vol,'Sigma');
 
 % Permnos
 permnos = unique(mst.Permno);
@@ -120,29 +133,27 @@ getw     = @(val) isign(val) ./ nansum(isign(val), 2);
 w        = getw(1) + getw(-1);
 ptfret_e = nansum(sign(signal) .* hpr .* w,2);
 
+% Equal weighted
+v        = vol{:,2:end}*sqrt(252);
+ptfret_v = nansum(sign(signal) .* hpr .* w .* (OPT_TARGET_VOL./v),2);
+
 % Value weighted
 w        = double(cap{:,2:end});
 getw     = @(val) w .* isign(val) ./ nansum(w .* isign(val), 2);
 w        = getw(1) + getw(-1);
 ptfret_w = nansum(sign(signal) .* hpr .* w,2);
 
-t = [stratstats(dates, ptfret_e,'d',0);
-    stratstats(dates, ptfret_w,'d',0);
-    stratstats(dates, nanmean(hpr   ,2),'d',0);
-    stratstats(dates, nansum (hpr.*w,2),'d',0);
-    ]';
-
-
+allret = [ptfret_e, ptfret_w, ptfret_v, nanmean(hpr,2), nansum(hpr.*w,2)];
+t      = stratstats(dates, allret,'d',0)';
 
 %% Plot
 
 % Cumulated returns
-lvl = [ones(1,4); cumprod(1+[ptfret_e(2:end), ptfret_w(2:end),...
-                  nanmean(hpr(2:end,:),2), nansum(hpr(2:end,:).*w(2:end,:),2)])];
-plot(yyyymmdd2datetime(dates), log(lvl))
+lvl = [ones(1,size(allret,2)); cumprod(1+allret(OPT_LAG_VOL:end,:))];
+plot(yyyymmdd2datetime(dates(OPT_LAG_VOL-1:end)), log(lvl))
 title 'Cumulated returns'
 ylabel log
-legend EW VW 'EW longonly' 'VW longonly'
+legend EW VW VOLW 'EW longonly' 'VW longonly'
 
 % Correctly predicted and long positions
 total   = sum(~isnan(signal),2);
