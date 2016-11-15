@@ -73,7 +73,7 @@ ranges = [ 930, 1000, 1030, 1100, 1130, 1200, 1230, 1300, 1330, 1400, 1430,...
 ranges = [ranges(1:end-1), ranges(2:end)];
 
 for r = 1:size(ranges,1)
-    opt           = struct('HalfHourRange',ranges(r,:));
+    opt           = struct('Range',ranges(r,:));
     [~, filename] = AnalyzeImom('halfHourRet',[],master,'..\data\TAQ\sampled\5min\nobad_vw',[],[],opt);
 
     % Rename file
@@ -83,7 +83,7 @@ for r = 1:size(ranges,1)
 end
 
 for r = 1:size(ranges,1)
-    opt           = struct('HalfHourRange',ranges(r,:));
+    opt           = struct('Range',ranges(r,:));
     [~, filename] = AnalyzeImom('halfHourVol',[],master,'..\data\TAQ\sampled\5min\nobad_vw',[],[],opt);
 
     % Rename file
@@ -91,6 +91,14 @@ for r = 1:size(ranges,1)
     newName = fullfile('results', regexprep(filename, '.mat', sprintf('%d.mat',ranges(r,1))));
     movefile(oldName,newName)
 end
+
+opt.Range     = [123000,160000];
+[~, filename] = AnalyzeImom('volInRange',[],master,'..\data\TAQ\sampled\5min\nobad_vw',[],[],opt);
+
+% Rename file
+oldName = fullfile('results',filename);
+newName = fullfile('results', regexprep(filename, '.mat', sprintf('%d-%d.mat',opt.Range)));
+movefile(oldName,newName)
 
 %% Fama and french
 datasets = {'F-F_Research_Data_5_Factors_2x3_daily_TXT.zip',...
