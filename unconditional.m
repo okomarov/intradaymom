@@ -1,8 +1,7 @@
 %% Options
-OPT_LAGDAY             = 1;
-OPT_OUTLIERS_THRESHOLD = 5;
-OPT_HASWEIGHTS         = true;
-OPT_NOMICRO            = true;
+OPT_LAGDAY     = 1;
+OPT_HASWEIGHTS = true;
+OPT_NOMICRO    = true;
 
 OPT_CHECK_CRSP = true;
 
@@ -25,7 +24,7 @@ if OPT_CHECK_CRSP
     taq       = taq(ib,:);
     isequal(crsp.Date, taq.Date)
     isequal(crsp.Permno, taq.Permno)
-    permnos = unique(taq.Permno);
+    permnos   = unique(taq.Permno);
 end
 
 % Get market caps
@@ -42,9 +41,9 @@ cap = struct('Permnos', {getVariableNames(cap(:,2:end))}, ...
 
 % Unstack returns
 myunstack = @(tb,vname) sortrows(unstack(tb(:,{'Permno','Date',vname}),vname,'Permno'),'Date');
-taq.Ret = double(taq.LastPrice)./double(taq.FirstPrice)-1;
-ret_taq = myunstack(taq, 'Ret');
-ret_taq = ret_taq{:,2:end};
+taq.Ret   = double(taq.LastPrice)./double(taq.FirstPrice)-1;
+ret_taq   = myunstack(taq, 'Ret');
+ret_taq   = ret_taq{:,2:end};
 if OPT_CHECK_CRSP
     crsp.Ret = double(crsp.Prc)./double(crsp.Openprc)-1;
     ret_crsp = myunstack(crsp, 'Ret');
@@ -53,11 +52,6 @@ else
     ret_crsp = NaN(size(ret_taq));
 end
 
-% % Filter outliers
-% iout           = ret_taq+1 > OPT_OUTLIERS_THRESHOLD |...
-%                  1./(ret_taq+1) > OPT_OUTLIERS_THRESHOLD;
-% ret_taq(iout)  = NaN;
-% ret_crsp(iout) = NaN;
 %% Intraday-average: return
 if OPT_HASWEIGHTS
     w = bsxfun(@rdivide, cap.Data, nansum(cap.Data,2));
@@ -125,7 +119,7 @@ plot(G,'layout','force')
 % fclose(fid)
 
 save .\results\avg_ts_industry_vw ptfret_vw
-%% Data
+%% Half-hour averages: data
 % Index data
 mst = loadresults('master');
 
@@ -177,7 +171,7 @@ if OPT_HASWEIGHTS
 else
     save .\results\avg_ts_30min_ew avg
 end
-%% Plot
+%% Half-hour averages: plot
 avg_vw     = loadresults('avg_ts_30min_vw');
 avg_ew     = loadresults('avg_ts_30min_ew');
 avg_ew     = avg_ew{:,2:end};
@@ -230,4 +224,4 @@ subplot(224)
 hl2 = plot(dts, cumprod(nan2zero(avg_vw(:,sel))+1));
 set(hl2,{'Color'}, get(hl(sel),'Color'))
 
-legend(num2str(EDGES(sel)),'Location','East')
+legend(num2str(OPT_RANGES(sel)),'Location','East')
