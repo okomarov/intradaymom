@@ -88,6 +88,7 @@ idx    = in(hhmmss, opt.HalfHourRange);
 s.data = s.data(idx,:);
 
 % Reshape data
+% NOTE: one half-hour contains 7 prices five minutes apart
 nobs    = 7;
 nseries = size(s.mst,1);
 price   = reshape(s.data.Price,nobs,nseries);
@@ -123,6 +124,7 @@ idx    = in(hhmmss, opt.HalfHourRange);
 s.data = s.data(idx,:);
 
 % Reshape data
+% NOTE: one half-hour contains 7 prices five minutes apart
 nobs    = 7;
 nseries = size(s.mst,1);
 price   = reshape(s.data.Price,nobs,nseries);
