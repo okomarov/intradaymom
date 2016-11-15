@@ -91,3 +91,20 @@ for r = 1:size(ranges,1)
     newName = fullfile('results', regexprep(filename, '.mat', sprintf('%d.mat',ranges(r,1))));
     movefile(oldName,newName)
 end
+
+%% Fama and french
+datasets = {'F-F_Research_Data_5_Factors_2x3_daily_TXT.zip',...
+            'F-F_Momentum_Factor_daily_TXT.zip',...
+            'F-F_ST_Reversal_Factor_daily_TXT.zip'};
+
+for ii = 1:numel(datasets)
+    d{ii} = importFrenchData(datasets{ii},'results');
+end
+
+for ii = 2:numel(datasets)
+    [~,ia,ib] = intersect(d{1}.Date,d{ii}.Date);
+    d{1} = [d{1}(ia,:), d{ii}(ib,2:end)];
+end
+
+factors = [d{1}(:,1), varfun(@(x) x/100, d{1},'InputVariables',2:size(d{1},2))];
+save('results\RAfactors.mat', 'factors')

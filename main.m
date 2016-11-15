@@ -132,4 +132,51 @@ t = [stratstats(dates, ptfret_e,'d',0);
     stratstats(dates, nansum (hpr.*w,2),'d',0);
     ]';
 
-OPT_HASWEIGHTS
+
+
+%% Plot
+
+% Cumulated returns
+lvl = [ones(1,4); cumprod(1+[ptfret_e(2:end), ptfret_w(2:end),...
+                  nanmean(hpr(2:end,:),2), nansum(hpr(2:end,:).*w(2:end,:),2)])];
+plot(yyyymmdd2datetime(dates), log(lvl))
+title 'Cumulated returns'
+ylabel log
+legend EW VW 'EW longonly' 'VW longonly'
+
+% Correctly predicted and long positions
+total   = sum(~isnan(signal),2);
+correct = sum(sign(signal) == sign(hpr),2);
+long    = sum(signal > 0,2);
+
+% subplot(211)
+plot(yyyymmdd2datetime(dates), movmean([correct,long]./total,[252,0])*100)
+title '252-day moving averages'
+legend 'correctly predicted' 'long positions'
+ytickformat('percentage')
+
+% dsf = loadresults('dsfquery','..\results');
+% mkt = dsf(dsf.Permno == 84398,:);
+% idt = ismember(mkt.Date, dates);
+%
+% subplot(212)
+% plot(yyyymmdd2datetime(mkt.Date(idt)), mkt.Prc(idt))
+
+%% RA factors
+factors = loadresults('RAfactors');
+
+[~,ia,ib] = intersect(dates, factors.Date);
+ptfret_e  = ptfret_e(ia);
+ptfret_w  = ptfret_w(ia);
+factors   = factors(ib,:);
+n         = size(ptfret_e,1);
+opts      = {'intercept',false,'display','off','type','HAC','bandwidth',floor(4*(n/100)^(2/9))+1,'weights','BT'};
+f         = @(x,y)  hac(x, y, opts{:});
+
+[~,se,coeff] = f([ones(n,1), factors{:,[2:6,8:9]}*100], ptfret_e*100);
+tratio       = coeff./se;
+pval         = 2 * normcdf(-abs(tratio));
+
+[~,se,coeff] = f([ones(n,1), factors{:,[2:6,8:9]}*100], ptfret_w*100);
+tratio       = coeff./se;
+pval         = 2 * normcdf(-abs(tratio));
