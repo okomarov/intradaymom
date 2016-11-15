@@ -10,8 +10,8 @@ OPT_NOMICRO = true;
 
 % Choose one from the dictionary
 OPT_PRICE_TYPE = 2;
-OPT_TYPE_DICT  = {1, 'taq_exact' 
-                  2, 'taq_vwap' 
+OPT_TYPE_DICT  = {1, 'taq_exact'
+                  2, 'taq_vwap'
                   3, 'taq_exact/vwap'};
 OPT_PRICE_TYPE = OPT_TYPE_DICT{ismember([OPT_TYPE_DICT{:,1}], OPT_PRICE_TYPE),2};
 
@@ -36,6 +36,11 @@ end
 mst       = mst(ia,:);
 price_fl  = price_fl(ib,:);
 % isequal(mst.Date, price_fl.Date)
+
+% Market cap
+cap       = getMktCap(mst,OPT_LAGDAY);
+myunstack = @(tb,vname) sortrows(unstack(tb(:,{'Permno','Date',vname}),vname,'Permno'),'Date');
+cap       = myunstack(cap,'Cap');
 
 % Permnos
 permnos = unique(mst.Permno);
@@ -72,24 +77,22 @@ N      = numel(dates);
 signal = NaN(N, nseries);
 hpr    = NaN(N, nseries);
 
-poolStartup(8,'AttachedFiles',{'poolStartup.m'})
-tic
-parfor ii = 2:N
+for ii = 2:N
     disp(ii)
     switch OPT_PRICE_TYPE
         case 'taq_exact'
             s = struct('datapath',datapath, 'mst', mst{ii},'price_fl',price_fl{ii},...
                        'START_SIGNAL', START_SIGNAL,'END_SIGNAL', END_SIGNAL,...
                        'START_HPR', START_HPR,'END_HPR',END_HPR);
-            
+
         case 'taq_vwap'
             s = struct('START_SIGNAL', SIGNAL_ST{ii},'END_SIGNAL', SIGNAL_EN{ii},...
                        'START_HPR', HPR_ST{ii},'END_HPR',HPR_EN{ii});
         case 'taq_exact/vwap'
     end
-    
+
     [signal_st, signal_en, hpr_st, hpr_en] = getPrices(OPT_PRICE_TYPE, permnos, s);
-      
+
 
     % Signal: Filled back half-day ret
     signal(ii,:) = signal_en./signal_st-1;
@@ -97,37 +100,36 @@ parfor ii = 2:N
     % hpr with 5 min skip
     hpr(ii,:) = hpr_en./hpr_st-1;
 
-%     if OPT_HASWEIGHTS
-%         weight = w{ii};
-%     else
-%         weight = [];
-%     end
-%  
-%     % PTF ret
-%     [ptf(ii,:), bin1(ii,:)] = portfolio_sort(hpr,signal(ii,:), 'PortfolioNumber',OPT_PTFNUM, 'Weights',weight);
-%    
-%     % PTF ret
-%     [ptf2(ii,:), bin2(ii,:)] = portfolio_sort(hpr,{w{ii},signal(ii,:)}, 'PortfolioNumber',OPT_PTFNUM_DOUBLE,...
-%         'Weights',weight,'IndependentSort',OPT_INDEP_SORT);
+    %     if OPT_HASWEIGHTS
+    %         weight = w{ii};
+    %     else
+    %         weight = [];
+    %     end
+    %
+    %     % PTF ret
+    %     [ptf(ii,:), bin1(ii,:)] = portfolio_sort(hpr,signal(ii,:), 'PortfolioNumber',OPT_PTFNUM, 'Weights',weight);
+    %
+    %     % PTF ret
+    %     [ptf2(ii,:), bin2(ii,:)] = portfolio_sort(hpr,{w{ii},signal(ii,:)}, 'PortfolioNumber',OPT_PTFNUM_DOUBLE,...
+    %         'Weights',weight,'IndependentSort',OPT_INDEP_SORT);
 end
-toc
-signal(isnan(hpr)) = NaN;
-t = stratstats(dates, nanmean(sign(signal) .* hpr,2),'d',0)';
 
-t = stratstats(dates, [ptf, ptf(:,1)-ptf(:,end)] ,'d',0)';
+% Equal weighted
+isign    = @(val) sign(signal) == val;
+getw     = @(val) isign(val) ./ nansum(isign(val), 2);
+w        = getw(1) + getw(-1);
+ptfret_e = nansum(sign(signal) .* hpr .* w,2);
 
-col          = nan2zero(bin1)+1;
-row          = repmat((1:N)',1,nseries);
-subs         = [row(:),col(:)];
-sigMin       = accumarray(subs, signal(:), [],@nanmin);
-sigMax       = accumarray(subs, signal(:), [],@nanmax);
-t.Signal_Min = [nanmean(sigMin(2:end,2:end))'; NaN];
-t.Signal_Max = [nanmean(sigMax(2:end,2:end))'; NaN];
-t{:,:}'
+% Value weighted
+w        = double(cap{:,2:end});
+getw     = @(val) w .* isign(val) ./ nansum(w .* isign(val), 2);
+w        = getw(1) + getw(-1);
+ptfret_w = nansum(sign(signal) .* hpr .* w,2);
 
-t2 = stratstats(dates, ptf2 ,'d',0);
-t2{:,:}'
-reshape(t2.Annret, OPT_PTFNUM_DOUBLE)'
-% t.Properties.VariableNames'
+t = [stratstats(dates, ptfret_e,'d',0);
+    stratstats(dates, ptfret_w,'d',0);
+    stratstats(dates, nanmean(hpr   ,2),'d',0);
+    stratstats(dates, nansum (hpr.*w,2),'d',0);
+    ]';
 
 OPT_HASWEIGHTS
