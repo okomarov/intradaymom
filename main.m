@@ -24,6 +24,8 @@ OPT_VOL_AVG    = 's';
 OPT_VOL_LAG    = 40;
 OPT_VOL_SHIFT  = OPT_VOL_LAG - 1 + OPT_LAGDAY;
 OPT_VOL_TARGET = 0.4;
+
+OPT_MINOBS_REGRESSION_LONG = 10;
 %% Data
 datapath = '..\data\TAQ\sampled\5min\nobad';
 
@@ -186,7 +188,35 @@ ytickformat('percentage')
 %
 % subplot(212)
 % plot(yyyymmdd2datetime(mkt.Date(idt)), mkt.Prc(idt))
+%% Regress on long-only
+opts = {'intercept',false,'display','off','type','HAC','bandwidth',floor(4*(results.N/100)^(2/9))+1,'weights','BT'};
 
+fields = results.Names;
+fields = fields(cellfun(@isempty, regexp(fields,'_long')));
+for ii = 1:numel(fields)
+    f          = fields{ii};
+    l          = ones(results.N, 1);
+    X          = num2cell(tsmom.(f)() * 100,1);
+    y          = tsmom.([f '_long'])()*100;
+    enough_obs = sum(~isnan(y)) > OPT_MINOBS_REGRESSION_LONG;
+    y          = num2cell(y,1);
+
+    [se, coeff] = deal(NaN(results.nseries,2));
+    parfor c = 1:results.nseries
+        if enough_obs(c)
+            [~,se(c,:), coeff(c,:)] = hac([l X{c}],y{c}, opts{:});
+        end
+    end
+
+    tratio = coeff./se;
+    pval   = 2 * normcdf(-abs(tratio));
+
+    results.RegressOnLong.(f).Coeff  = coeff;
+    results.RegressOnLong.(f).Se     = se;
+    results.RegressOnLong.(f).Tratio = tratio;
+    results.RegressOnLong.(f).Pval   = pval;
+end
+clear l X y enough_obs se coeff tratio pval fields
 %% RA factors
 factors = loadresults('RAfactors');
 
