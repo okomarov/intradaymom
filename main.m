@@ -15,14 +15,15 @@ OPT_TYPE_DICT  = {1, 'taq_exact'
                   3, 'taq_exact/vwap'};
 OPT_PRICE_TYPE = OPT_TYPE_DICT{ismember([OPT_TYPE_DICT{:,1}], OPT_PRICE_TYPE),2};
 
-START_SIGNAL = 930;
-END_SIGNAL   = 1200;
-START_HPR    = 1230;
-END_HPR      = 1530;
+OPT_SIGNAL_START = 930;
+OPT_SIGNAL_END   = 1200;
+OPT_HPR_START    = 1230;
+OPT_HPR_END      = 1530;
 
-OPT_VOL_AVG = 'e';
-OPT_LAG_VOL = 40;
-OPT_TARGET_VOL = 0.4;
+OPT_VOL_AVG    = 's';
+OPT_VOL_LAG    = 40;
+OPT_VOL_SHIFT  = OPT_VOL_LAG - 1 + OPT_LAGDAY;
+OPT_VOL_TARGET = 0.4;
 %% Data
 datapath = '..\data\TAQ\sampled\5min\nobad';
 
@@ -50,29 +51,29 @@ cap       = myunstack(cap,'Cap');
 vol            = loadresults('volInRange123000-160000');
 [idx,pos]      = ismembIdDate(vol.Permno, vol.Date, mst.Permno, mst.Date);
 vol            = vol(idx,:);
-vol.Sigma      = sqrt(tsmovavg(vol.RV5,OPT_VOL_AVG, OPT_LAG_VOL,1));
-SHIFT          = OPT_LAG_VOL-1+OPT_LAGDAY;
-vol(:,[1,2,4]) = lagpanel(vol(:,[1,2,4]),'Permno',SHIFT);
+vol.Sigma      = sqrt(tsmovavg(vol.RV5,OPT_VOL_AVG, OPT_VOL_LAG,1));
+vol(:,[1,2,4]) = lagpanel(vol(:,[1,2,4]),'Permno',OPT_VOL_SHIFT);
 vol            = myunstack(vol,'Sigma');
 
 % Permnos
-permnos = unique(mst.Permno);
-nseries = numel(permnos);
+results.permnos = unique(mst.Permno);
+results.nseries = numel(results.permnos);
 
 switch OPT_PRICE_TYPE
     case 'taq_vwap'
-        p{1} = loadresults(sprintf('VWAP_30_%d', START_SIGNAL*100),'..\results\vwap');
-        p{2} = loadresults(sprintf('VWAP_30_%d', END_SIGNAL*100),'..\results\vwap');
-        p{3} = loadresults(sprintf('VWAP_30_%d', START_HPR*100),'..\results\vwap');
-        p{4} = loadresults(sprintf('VWAP_30_%d', END_HPR*100),'..\results\vwap');
+        p{1} = loadresults(sprintf('VWAP_30_%d', OPT_SIGNAL_START*100),'..\results\vwap');
+        p{2} = loadresults(sprintf('VWAP_30_%d', OPT_SIGNAL_END*100),'..\results\vwap');
+        p{3} = loadresults(sprintf('VWAP_30_%d', OPT_HPR_START*100),'..\results\vwap');
+        p{4} = loadresults(sprintf('VWAP_30_%d', OPT_HPR_END*100),'..\results\vwap');
         for ii = 1:4
             [~,pos] = ismembIdDate(mst.Permno, mst.Date, p{ii}.Permno, p{ii}.Date);
             p{ii}   = p{ii}(pos,:);
         end
 end
 
+clear ia ib pos
 %% Cache by dates
-[dates,~,g] = unique(mst.Date);
+[results.dates,~,g] = unique(mst.Date);
 mst         = cache2cell(mst,g);
 price_fl    = cache2cell(price_fl,g);
 
@@ -80,23 +81,22 @@ SIGNAL_ST = cache2cell(p{1},g);
 SIGNAL_EN = cache2cell(p{2},g);
 HPR_ST    = cache2cell(p{3},g);
 HPR_EN    = cache2cell(p{4},g);
-clear p
-%%
-N      = numel(dates);
+clear p g
+%% TSMOM
+results.N = numel(results.dates);
 % ptf    = NaN(N,OPT_PTFNUM);
 % ptf2   = NaN(N,prod(OPT_PTFNUM_DOUBLE));
 % bin1   = NaN(N, nseries);
 % bin2   = NaN(N, nseries);
-signal = NaN(N, nseries);
-hpr    = NaN(N, nseries);
+results.signal = NaN(results.N, results.nseries);
+results.hpr    = NaN(results.N, results.nseries);
 
-for ii = 2:N
-    disp(ii)
+for ii = 2:results.N
     switch OPT_PRICE_TYPE
         case 'taq_exact'
             s = struct('datapath',datapath, 'mst', mst{ii},'price_fl',price_fl{ii},...
-                       'START_SIGNAL', START_SIGNAL,'END_SIGNAL', END_SIGNAL,...
-                       'START_HPR', START_HPR,'END_HPR',END_HPR);
+                       'START_SIGNAL', OPT_SIGNAL_START,'END_SIGNAL', OPT_SIGNAL_END,...
+                       'START_HPR', OPT_HPR_START,'END_HPR',OPT_HPR_END);
 
         case 'taq_vwap'
             s = struct('START_SIGNAL', SIGNAL_ST{ii},'END_SIGNAL', SIGNAL_EN{ii},...
@@ -104,14 +104,14 @@ for ii = 2:N
         case 'taq_exact/vwap'
     end
 
-    [signal_st, signal_en, hpr_st, hpr_en] = getPrices(OPT_PRICE_TYPE, permnos, s);
+    [signal_st, signal_en, hpr_st, hpr_en] = getPrices(OPT_PRICE_TYPE, results.permnos, s);
 
 
     % Signal: Filled back half-day ret
-    signal(ii,:) = signal_en./signal_st-1;
+    results.signal(ii,:) = signal_en./signal_st-1;
 
     % hpr with 5 min skip
-    hpr(ii,:) = hpr_en./hpr_st-1;
+    results.hpr(ii,:) = hpr_en./hpr_st-1;
 
     %     if OPT_HASWEIGHTS
     %         weight = w{ii};
@@ -126,42 +126,46 @@ for ii = 2:N
     %     [ptf2(ii,:), bin2(ii,:)] = portfolio_sort(hpr,{w{ii},signal(ii,:)}, 'PortfolioNumber',OPT_PTFNUM_DOUBLE,...
     %         'Weights',weight,'IndependentSort',OPT_INDEP_SORT);
 end
+clear signal_en signal_st hpr_en hpr_st s
 
 % Equal weighted
-isign    = @(val) sign(signal) == val;
-getw     = @(val) isign(val) ./ nansum(isign(val), 2);
-w        = getw(1) + getw(-1);
-ptfret_e = nansum(sign(signal) .* hpr .* w,2);
+results.ptfret    = table();
+isign             = @(val) sign(results.signal) == val;
+getew             = @(val) isign(val) ./ nansum(isign(val), 2);
+tsmom.ew          = @() sign(results.signal) .* results.hpr .* (getew(1) + getew(-1));
+results.ptfret.ew = nansum(tsmom.ew(),2);
 
-% Equal weighted
-v        = vol{:,2:end}*sqrt(252);
-ptfret_v = nansum(sign(signal) .* hpr .* w .* (OPT_TARGET_VOL./v),2);
+% Volatility weighted
+v                   = vol{:,2:end}*sqrt(252);
+tsmom.volw          = @() sign(results.signal) .* results.hpr .* (getew(1) + getew(-1)) .* (OPT_VOL_TARGET./v);
+results.ptfret.volw = nansum(tsmom.volw(),2);
 
 % Value weighted
-w        = double(cap{:,2:end});
-getw     = @(val) w .* isign(val) ./ nansum(w .* isign(val), 2);
-w        = getw(1) + getw(-1);
-ptfret_w = nansum(sign(signal) .* hpr .* w,2);
+w                 = double(cap{:,2:end});
+getvw             = @(val) w .* isign(val) ./ nansum(w .* isign(val), 2);
+tsmom.vw          = @() sign(results.signal) .* results.hpr .* (getvw(1) + getvw(-1));
+results.ptfret.vw = nansum(tsmom.vw(),2);
 
-allret = [ptfret_e, ptfret_w, ptfret_v, nanmean(hpr,2), nansum(hpr.*w,2)];
-t      = stratstats(dates, allret,'d',0)';
+% EW long-only
+tsmom.ew_long          = @() results.hpr .* (getew(1) + getew(-1));
+results.ptfret.ew_long = nansum(tsmom.ew_long(),2);
 
 %% Plot
 
 % Cumulated returns
-lvl = [ones(1,size(allret,2)); cumprod(1+allret(OPT_LAG_VOL:end,:))];
-plot(yyyymmdd2datetime(dates(OPT_LAG_VOL-1:end)), log(lvl))
+results.lvl = [ones(1,size(results.ptfret{:,:},2)); cumprod(1+results.ptfret{:,:}(OPT_VOL_LAG:end,:))];
+plot(yyyymmdd2datetime(results.dates(OPT_VOL_LAG-1:end)), log(results.lvl))
 title 'Cumulated returns'
 ylabel log
-legend EW VW VOLW 'EW longonly' 'VW longonly'
+legend(results.Names,'Interpreter','none');
 
 % Correctly predicted and long positions
-total   = sum(~isnan(signal),2);
-correct = sum(sign(signal) == sign(hpr),2);
-long    = sum(signal > 0,2);
+total   = sum(~isnan(results.signal),2);
+correct = sum(sign(results.signal) == sign(results.hpr),2);
+long    = sum(results.signal > 0,2);
 
 % subplot(211)
-plot(yyyymmdd2datetime(dates), movmean([correct,long]./total,[252,0])*100)
+plot(yyyymmdd2datetime(results.dates), movmean([correct,long]./total,[252,0])*100)
 title '252-day moving averages'
 legend 'correctly predicted' 'long positions'
 ytickformat('percentage')
