@@ -25,7 +25,9 @@ OPT_VOL_LAG    = 40;
 OPT_VOL_SHIFT  = OPT_VOL_LAG - 1 + OPT_LAGDAY;
 OPT_VOL_TARGET = 0.4;
 
-OPT_MINOBS_REGRESSION_LONG = 10;
+OPT_REGRESSION_LONG_MINOBS = 10;
+OPT_REGRESSION_LONG_ALPHA  = 0.05;
+
 %% Data
 datapath = '..\data\TAQ\sampled\5min\nobad';
 
@@ -76,8 +78,8 @@ end
 clear ia ib pos
 %% Cache by dates
 [results.dates,~,g] = unique(mst.Date);
-mst         = cache2cell(mst,g);
-price_fl    = cache2cell(price_fl,g);
+mst                 = cache2cell(mst,g);
+price_fl            = cache2cell(price_fl,g);
 
 SIGNAL_ST = cache2cell(p{1},g);
 SIGNAL_EN = cache2cell(p{2},g);
@@ -191,14 +193,15 @@ ytickformat('percentage')
 %% Regress on long-only
 opts = {'intercept',false,'display','off','type','HAC','bandwidth',floor(4*(results.N/100)^(2/9))+1,'weights','BT'};
 
-fields = results.Names;
-fields = fields(cellfun(@isempty, regexp(fields,'_long')));
-for ii = 1:numel(fields)
+fields  = results.Names;
+fields  = fields(cellfun(@isempty, regexp(fields,'_long')));
+nfields = numel(fields);
+for ii = 1:nfields
     f          = fields{ii};
     l          = ones(results.N, 1);
     X          = num2cell(tsmom.(f)() * 100,1);
     y          = tsmom.([f '_long'])()*100;
-    enough_obs = sum(~isnan(y)) > OPT_MINOBS_REGRESSION_LONG;
+    enough_obs = sum(~isnan(y)) > OPT_REGRESSION_LONG_MINOBS;
     y          = num2cell(y,1);
 
     [se, coeff] = deal(NaN(results.nseries,2));
@@ -216,7 +219,27 @@ for ii = 1:numel(fields)
     results.RegressOnLong.(f).Tratio = tratio;
     results.RegressOnLong.(f).Pval   = pval;
 end
-clear l X y enough_obs se coeff tratio pval fields
+clear l X y enough_obs se coeff tratio pval
+
+% plot percentage positive and negative
+X = NaN(nfields,3);
+for ii = 1:nfields
+    f       = fields{ii};
+    data    = results.RegressOnLong.(f);
+    tot     = nnz(~isnan(data.Coeff(:,1)));
+    neg     = nnz(data.Coeff(:,1) < 0 & data.Pval < OPT_REGRESSION_LONG_ALPHA);
+    pos     = nnz(data.Coeff(:,1) > 0 & data.Pval < OPT_REGRESSION_LONG_ALPHA);
+    X(ii,:) = [neg, tot-neg-pos, pos]./tot;
+end
+h = barh(X*100,'stacked');
+set(gcf,'Position', [680 795 550 200])
+set(h(1),'FaceColor',[0.8500    0.3250    0.0980])
+set(h(2),'FaceColor',[0.9290    0.6940    0.1250])
+set(h(3),'FaceColor',[0    0.4470    0.7410])
+title 'Alphas from TSMOM regressed on long-only positions'
+legend({'stat. neagative','insignificant','stat. positive'},'Location','southoutside','Orientation','horizontal')
+xtickformat('percentage')
+yticklabels(fields)
 %% RA factors
 factors = loadresults('RAfactors');
 
