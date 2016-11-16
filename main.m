@@ -150,6 +150,16 @@ results.ptfret.vw = nansum(tsmom.vw(),2);
 tsmom.ew_long          = @() results.hpr .* (getew(1) + getew(-1));
 results.ptfret.ew_long = nansum(tsmom.ew_long(),2);
 
+% VW long-only
+tsmom.vw_long          = @() results.hpr .* (getvw(1) + getvw(-1));
+results.ptfret.vw_long = nansum(tsmom.vw_long(),2);
+
+% VOLW long-only
+tsmom.volw_long          = @() results.hpr .* (getew(1) + getew(-1)) .* (OPT_VOL_TARGET./v);
+results.ptfret.volw_long = nansum(tsmom.volw_long(),2);
+
+results.ptfret_stats = stratstats(results.dates, results.ptfret,'d',0)';
+results.Names        = results.ptfret.Properties.VariableNames;
 %% Plot
 
 % Cumulated returns
