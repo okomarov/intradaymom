@@ -132,35 +132,7 @@ for ii = 2:results.N
 end
 clear signal_en signal_st hpr_en hpr_st s
 
-% Equal weighted
-results.ptfret    = table();
-isign             = @(val) sign(results.signal) == val;
-getew             = @(val) isign(val) ./ nansum(isign(val), 2);
-tsmom.ew          = @() sign(results.signal) .* results.hpr .* (getew(1) + getew(-1));
-results.ptfret.ew = nansum(tsmom.ew(),2);
-
-% Volatility weighted
-v                   = vol{:,2:end}*sqrt(252);
-tsmom.volw          = @() sign(results.signal) .* results.hpr .* (getew(1) + getew(-1)) .* (OPT_VOL_TARGET./v);
-results.ptfret.volw = nansum(tsmom.volw(),2);
-
-% Value weighted
-w                 = double(cap{:,2:end});
-getvw             = @(val) w .* isign(val) ./ nansum(w .* isign(val), 2);
-tsmom.vw          = @() sign(results.signal) .* results.hpr .* (getvw(1) + getvw(-1));
-results.ptfret.vw = nansum(tsmom.vw(),2);
-
-% EW long-only
-tsmom.ew_long          = @() results.hpr .* (getew(1) + getew(-1));
-results.ptfret.ew_long = nansum(tsmom.ew_long(),2);
-
-% VW long-only
-tsmom.vw_long          = @() results.hpr .* (getvw(1) + getvw(-1));
-results.ptfret.vw_long = nansum(tsmom.vw_long(),2);
-
-% VOLW long-only
-tsmom.volw_long          = @() results.hpr .* (getew(1) + getew(-1)) .* (OPT_VOL_TARGET./v);
-results.ptfret.volw_long = nansum(tsmom.volw_long(),2);
+[results.ptfret, results.tsmom] = makeTsmom(results.signal, results.hpr, double(cap{:,2:end}), vol{:,2:end}*sqrt(252),OPT_VOL_TARGET);
 
 results.ptfret_stats = stratstats(results.dates, results.ptfret,'d',0)';
 results.Names        = results.ptfret.Properties.VariableNames;
