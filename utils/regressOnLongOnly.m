@@ -1,4 +1,4 @@
-function results = regressOnLongOnly(results, OPT_REGRESSION_LONG_MINOBS)
+function results = regressOnLongOnly(results, OPT_REGRESSION_LONG_MINOBS, OPT_REGRESSION_LONG_ALPHA)
 opts = {'intercept',false,'display','off','type','HAC','bandwidth',floor(4*(results.N/100)^(2/9))+1,'weights','BT'};
 
 fields  = regexp(results.Names,'\w+(?=_long)','match','once');
@@ -31,4 +31,25 @@ for ii = 1:nfields
     results.RegressOnLong.(f).Tratio = tratio;
     results.RegressOnLong.(f).Pval   = pval;
 end
+
+% Plot percentage positive and negative
+X = NaN(nfields,3);
+for ii = 1:nfields
+    f       = fields{ii};
+    data    = results.RegressOnLong.(f);
+    tot     = nnz(~isnan(data.Coeff(:,1)));
+    neg     = nnz(data.Coeff(:,1) < 0 & data.Pval < OPT_REGRESSION_LONG_ALPHA);
+    pos     = nnz(data.Coeff(:,1) > 0 & data.Pval < OPT_REGRESSION_LONG_ALPHA);
+    X(ii,:) = [neg, tot-neg-pos, pos]./tot;
+end
+figure
+h = barh(X*100,'stacked');
+set(gcf,'Position', [680 795 550 200])
+set(h(1),'FaceColor',[0.85, 0.325, 0.098])
+set(h(2),'FaceColor',[0.929, 0.694, 0.125])
+set(h(3),'FaceColor',[0, 0.447, 0.741])
+title 'Alphas from TSMOM regressed on long-only positions'
+legend({'stat. neagative','insignificant','stat. positive'},'Location','southoutside','Orientation','horizontal')
+xtickformat('percentage')
+yticklabels(fields)
 end

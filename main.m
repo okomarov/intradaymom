@@ -163,27 +163,8 @@ ytickformat('percentage')
 % subplot(212)
 % plot(yyyymmdd2datetime(mkt.Date(idt)), mkt.Prc(idt))
 %% Regress on long-only
-results = regressOnLongOnly(results, OPT_REGRESSION_LONG_MINOBS);
+results = regressOnLongOnly(results, OPT_REGRESSION_LONG_MINOBS, OPT_REGRESSION_LONG_ALPHA);
 
-% Plot percentage positive and negative
-X = NaN(nfields,3);
-for ii = 1:nfields
-    f       = fields{ii};
-    data    = results.RegressOnLong.(f);
-    tot     = nnz(~isnan(data.Coeff(:,1)));
-    neg     = nnz(data.Coeff(:,1) < 0 & data.Pval < OPT_REGRESSION_LONG_ALPHA);
-    pos     = nnz(data.Coeff(:,1) > 0 & data.Pval < OPT_REGRESSION_LONG_ALPHA);
-    X(ii,:) = [neg, tot-neg-pos, pos]./tot;
-end
-h = barh(X*100,'stacked');
-set(gcf,'Position', [680 795 550 200])
-set(h(1),'FaceColor',[0.85, 0.325, 0.098])
-set(h(2),'FaceColor',[0.929, 0.694, 0.125])
-set(h(3),'FaceColor',[0, 0.447, 0.741])
-title 'Alphas from TSMOM regressed on long-only positions'
-legend({'stat. neagative','insignificant','stat. positive'},'Location','southoutside','Orientation','horizontal')
-xtickformat('percentage')
-yticklabels(fields)
 %% RA factors
 factors = loadresults('RAfactors');
 
