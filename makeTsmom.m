@@ -4,36 +4,28 @@ ptfret        = table();
 isign         = @(val) sign(signal) == val;
 getew         = @(val) isign(val) ./ nansum(isign(val), 2);
 tsmom.ew      = @(val) sign(signal) .* hpr .* getew(val);
-pos           = tsmom.ew(1);
-neg           = tsmom.ew(-1);
-ptfret.ew_pos = nansum(pos,2);
-ptfret.ew_neg = nansum(neg,2);
-ptfret.ew     = nansum(pos,2) + nansum(neg,2);
+ptfret.ew_pos = nansum(tsmom.ew(1),2);
+ptfret.ew_neg = nansum(tsmom.ew(-1),2);
+ptfret.ew     = ptfret.ew_pos + ptfret.ew_neg;
 
 % Volatility weighted
 tsmom.volw      = @(val) sign(signal) .* hpr .* getew(val) .* (OPT_VOL_TARGET./vol);
-pos             = tsmom.volw(1);
-neg             = tsmom.volw(-1);
-ptfret.volw_pos = nansum(pos,2);
-ptfret.volw_neg = nansum(neg,2);
-ptfret.volw     = nansum(pos,2) + nansum(neg,2);
+ptfret.volw_pos = nansum(tsmom.volw(1),2);
+ptfret.volw_neg = nansum(tsmom.volw(-1),2);
+ptfret.volw     = ptfret.volw_pos + ptfret.volw_neg;
 
 % Value weighted
 getvw         = @(val) w .* isign(val) ./ nansum(w .* isign(val), 2);
 tsmom.vw      = @(val) sign(signal) .* hpr .* getvw(val);
-pos           = tsmom.vw(1);
-neg           = tsmom.vw(-1);
-ptfret.vw_pos = nansum(pos,2);
-ptfret.vw_neg = nansum(neg,2);
-ptfret.vw     = nansum(pos,2) + nansum(neg,2);
+ptfret.vw_pos = nansum(tsmom.vw(1),2);
+ptfret.vw_neg = nansum(tsmom.vw(-1),2);
+ptfret.vw     = ptfret.vw_pos + ptfret.vw_neg;
 
 % Linear increasing in the extremes
 tsmom.liw      = @(val) sign(signal) .* hpr .* getliw(signal, isign(val));
-pos            = tsmom.liw(1);
-neg            = tsmom.liw(-1);
-ptfret.liw_pos = nansum(pos,2);
-ptfret.liw_neg = nansum(neg,2);
-ptfret.liw     = nansum(pos,2) + nansum(neg,2);
+ptfret.liw_pos = nansum(tsmom.liw(1),2);
+ptfret.liw_neg = nansum(tsmom.liw(-1),2);
+ptfret.liw     = ptfret.liw_pos + ptfret.liw_neg;
 
 % EW long-only
 tsmom.ew_long  = @() hpr .* (getew(1)+getew(-1));
