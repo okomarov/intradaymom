@@ -163,37 +163,9 @@ ytickformat('percentage')
 % subplot(212)
 % plot(yyyymmdd2datetime(mkt.Date(idt)), mkt.Prc(idt))
 %% Regress on long-only
-opts = {'intercept',false,'display','off','type','HAC','bandwidth',floor(4*(results.N/100)^(2/9))+1,'weights','BT'};
+results = regressOnLongOnly(results, OPT_REGRESSION_LONG_MINOBS);
 
-fields  = results.Names;
-fields  = fields(cellfun(@isempty, regexp(fields,'_long')));
-nfields = numel(fields);
-for ii = 1:nfields
-    f          = fields{ii};
-    l          = ones(results.N, 1);
-    X          = num2cell(tsmom.(f)() * 100,1);
-    y          = tsmom.([f '_long'])()*100;
-    enough_obs = sum(~isnan(y)) > OPT_REGRESSION_LONG_MINOBS;
-    y          = num2cell(y,1);
-
-    [se, coeff] = deal(NaN(results.nseries,2));
-    parfor c = 1:results.nseries
-        if enough_obs(c)
-            [~,se(c,:), coeff(c,:)] = hac([l X{c}],y{c}, opts{:});
-        end
-    end
-
-    tratio = coeff./se;
-    pval   = 2 * normcdf(-abs(tratio));
-
-    results.RegressOnLong.(f).Coeff  = coeff;
-    results.RegressOnLong.(f).Se     = se;
-    results.RegressOnLong.(f).Tratio = tratio;
-    results.RegressOnLong.(f).Pval   = pval;
-end
-clear l X y enough_obs se coeff tratio pval
-
-% plot percentage positive and negative
+% Plot percentage positive and negative
 X = NaN(nfields,3);
 for ii = 1:nfields
     f       = fields{ii};
@@ -205,9 +177,9 @@ for ii = 1:nfields
 end
 h = barh(X*100,'stacked');
 set(gcf,'Position', [680 795 550 200])
-set(h(1),'FaceColor',[0.8500    0.3250    0.0980])
-set(h(2),'FaceColor',[0.9290    0.6940    0.1250])
-set(h(3),'FaceColor',[0    0.4470    0.7410])
+set(h(1),'FaceColor',[0.85, 0.325, 0.098])
+set(h(2),'FaceColor',[0.929, 0.694, 0.125])
+set(h(3),'FaceColor',[0, 0.447, 0.741])
 title 'Alphas from TSMOM regressed on long-only positions'
 legend({'stat. neagative','insignificant','stat. positive'},'Location','southoutside','Orientation','horizontal')
 xtickformat('percentage')
