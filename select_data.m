@@ -1,5 +1,6 @@
 %%
-OPT_LAGDAY = 1;
+OPT_LAGDAY     = 1;
+OPT_LAG_AMIHUD = 12;
 %% Import data
 % Index data
 datapath = '..\data\TAQ\sampled\5min\nobad_vw';
@@ -60,6 +61,17 @@ s.illiq                 = illiq;
 s.permnos               = unPermno;
 s.dates                 = unDt;
 
+% Tick size
+tick       = price_fl(:,{'Date','Permno'});
+price      = double(price_fl.LastPrice);
+idx        = tick.Date/100 < 199707;
+price(idx) = (1/8)./price(idx);
+idx        = in(tick.Date/100, [199707, 200101],'[]');
+price(idx) = (1/16)./price(idx);
+idx        = tick.Date/100 > 200101;
+price(idx) = (1/100)./price(idx);
+tick.Ratio = price;
+
 % Add back mkt
 master = [master; mkt];
 
@@ -67,7 +79,7 @@ save('results\master.mat', 'master')
 save('results\price_fl.mat','price_fl')
 save('results\dsfquery.mat','dsf')
 save('results\illiq.mat', 's')
-
+save('results\tick.mat', 'tick')
 %% Half hour returns
 clearvars -except master price_fl
 [idx,pos]                = ismembIdDate(master.Permno, master.Date, price_fl.Permno, price_fl.Date);
@@ -115,7 +127,7 @@ end
 
 for ii = 2:numel(datasets)
     [~,ia,ib] = intersect(d{1}.Date,d{ii}.Date);
-    d{1} = [d{1}(ia,:), d{ii}(ib,2:end)];
+    d{1}      = [d{1}(ia,:), d{ii}(ib,2:end)];
 end
 
 factors = [d{1}(:,1), varfun(@(x) x/100, d{1},'InputVariables',2:size(d{1},2))];

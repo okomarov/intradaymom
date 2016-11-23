@@ -5,7 +5,7 @@ OPT_NOMICRO = true;
 % OPT_HASWEIGHTS = true;
 % OPT_INDEP_SORT = false;
 
-% OPT_PTFNUM        = 10;
+OPT_PTFNUM = 5;
 % OPT_PTFNUM_DOUBLE = [5,5];
 
 % Choose one from the dictionary
@@ -65,15 +65,18 @@ results.nseries = numel(results.permnos);
 
 % Illiquidity
 amihud         = loadresults('illiq');
-amihud.illiq   = [NaN(OPT_LAGDAY, results.nseries); 
+idx            = ismember(amihud.permnos, results.permnos);
+amihud.illiq   = amihud.illiq(:,idx);
+amihud.permnos = amihud.permnos(idx);
+amihud.illiq   = [NaN(OPT_LAGDAY, size(amihud.illiq,2)); 
                   amihud.illiq(1:end-OPT_LAGDAY,:)];
 
 % Tick ratios
-tick      = loadresults('tick');
-[idx,pos] = ismembIdDate(tick.Permno, tick.Date, mst.Permno, mst.Date);
-tick      = tick(idx,:);
-tick      = lagpanel(tick,'Permno',OPT_LAGDAY);
-tick      = myunstack(tick,'Ratio');
+tick = loadresults('tick');
+idx  = ismembIdDate(tick.Permno, tick.Date, mst.Permno, mst.Date);
+tick = tick(idx,:);
+tick = lagpanel(tick,'Permno',OPT_LAGDAY);
+tick = myunstack(tick,'Ratio');
 
 switch OPT_PRICE_TYPE
     case 'taq_vwap'
@@ -86,8 +89,8 @@ switch OPT_PRICE_TYPE
             p{ii}   = p{ii}(pos,:);
         end
 end
-
 clear ia ib pos
+
 %% Cache by dates
 [results.dates,~,g] = unique(mst.Date);
 mst                 = cache2cell(mst,g);
@@ -98,6 +101,7 @@ SIGNAL_EN = cache2cell(p{2},g);
 HPR_ST    = cache2cell(p{3},g);
 HPR_EN    = cache2cell(p{4},g);
 clear p g
+
 %% Signal and HPR
 results.N      = numel(results.dates);
 results.signal = NaN(results.N, results.nseries);
@@ -118,63 +122,43 @@ for ii = 2:results.N
 
     [signal_st, signal_en, hpr_st, hpr_en] = getPrices(OPT_PRICE_TYPE, results.permnos, s);
 
-
     % Signal: Filled back half-day ret
     results.signal(ii,:) = signal_en./signal_st-1;
-
     % hpr with 5 min skip
-    results.hpr(ii,:)    = hpr_en./hpr_st-1;
+    results.hpr(ii,:) = hpr_en./hpr_st-1;
 end
 clear signal_en signal_st hpr_en hpr_st s
-%% TSMOM
 
-% Univariate ptfs and stats
+%% TSMOM univariate
+
+% ptfs and stats
 [results.ptfret, results.tsmom] = makeTsmom(results.signal, results.hpr, double(cap{:,2:end}), vol{:,2:end}*sqrt(252),OPT_VOL_TARGET);
 
 results.ptfret_stats = stratstats(results.dates, results.ptfret,'d',0)';
 results.Names        = results.ptfret.Properties.VariableNames;
 
-% Sorted on illiquidity
-idx            = ismember(amihud.permnos, results.permnos);
-amihud.illiq   = amihud.illiq(:,idx);
-amihud.permnos = amihud.permnos(idx);
-[~,pos]        = ismember(results.dates/100, amihud.dates);
-amihud.illiq   = amihud.illiq(pos,:);
+%% TSMOM bivariate
+OPT.PortfolioNumber = OPT_PTFNUM;
 
-OPT.PortfolioNumber    = 5;
-[bins, countd, ptf_id] = binSignal(amihud.illiq,OPT);
-results.ptfret_illiq   = table();
-for p = 1:max(ptf_id)
-    idx          = bins == p;
-    signal       = results.signal;
-    signal(~idx) = NaN;
-    tmp          = makeTsmom(signal, results.hpr,[],[],[],true);
-    
-    results.ptfret_illiq = [results.ptfret_illiq renameVarNames(tmp, strcat(getVariableNames(tmp),sprintf('_%d',p)))];
-end
+% Sorted on illiquidity
+[~,pos]      = ismember(results.dates/100, amihud.dates);
+amihud.illiq = amihud.illiq(pos,:);
+results = makeTsmomBiv(results,amihud.illiq, 'illiq', OPT);
 
 % Sorted on mkt cap
-OPT.PortfolioNumber    = 5;
-[bins, countd, ptf_id] = binSignal(double(cap{:,2:end}),OPT);
-results.ptfret_cap     = table();
-for p = 1:max(ptf_id)
-    idx          = bins == p;
-    signal       = results.signal;
-    signal(~idx) = NaN;
-    tmp          = makeTsmom(signal, results.hpr,[],[],[],true);
-    
-    results.ptfret_cap = [results.ptfret_cap renameVarNames(tmp, strcat(getVariableNames(tmp),sprintf('_%d',p)))];
-end
+results = makeTsmomBiv(results, double(cap{:,2:end}), 'cap', OPT);
+
+% Sorted on tick ratio
+results = makeTsmomBiv(results, tick{:,2:end}, 'tick', OPT);
 %% Plot
 
 % Cumulated returns univariate
 results.lvl = plot_cumret(results.dates, results.ptfret, OPT_VOL_LAG, true);
 
-% Cumulated returns illiq and tsmom (ew)
+% Bivariate and tsmom ew
 plot_cumret(results.dates, results.ptfret_illiq, 20, true);
- 
-% Cumulated returns on cap and tsmom (ew)
-plot_cumret(results.dates, results.ptfret_cap, 20, true);
+plot_cumret(results.dates, results.ptfret_cap  , 20, true);
+plot_cumret(results.dates, results.ptfret_tick ,  1, true);
 
 % Correctly predicted and long positions
 total   = sum(~isnan(results.signal),2);
