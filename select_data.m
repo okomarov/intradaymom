@@ -54,12 +54,19 @@ price_fl = addPermno(price_fl);
 [~,pos]  = ismembIdDate(master.Permno, master.Date, price_fl.Permno, price_fl.Date);
 price_fl = price_fl(pos,:);
 
+% Illiquidity
+[illiq, unPermno, unDt] = getAmihudIlliq(dsf.Permno, dsf.Date, dsf.Prc, dsf.Ret, dsf.Vol, OPT_LAG_AMIHUD);
+s.illiq                 = illiq;
+s.permnos               = unPermno;
+s.dates                 = unDt;
+
 % Add back mkt
 master = [master; mkt];
 
 save('results\master.mat', 'master')
 save('results\price_fl.mat','price_fl')
 save('results\dsfquery.mat','dsf')
+save('results\illiq.mat', 's')
 
 %% Half hour returns
 clearvars -except master price_fl

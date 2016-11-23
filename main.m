@@ -63,6 +63,18 @@ vol            = myunstack(vol,'Sigma');
 results.permnos = unique(mst.Permno);
 results.nseries = numel(results.permnos);
 
+% Illiquidity
+amihud         = loadresults('illiq');
+amihud.illiq   = [NaN(OPT_LAGDAY, results.nseries); 
+                  amihud.illiq(1:end-OPT_LAGDAY,:)];
+
+% Tick ratios
+tick      = loadresults('tick');
+[idx,pos] = ismembIdDate(tick.Permno, tick.Date, mst.Permno, mst.Date);
+tick      = tick(idx,:);
+tick      = lagpanel(tick,'Permno',OPT_LAGDAY);
+tick      = myunstack(tick,'Ratio');
+
 switch OPT_PRICE_TYPE
     case 'taq_vwap'
         p{1} = loadresults(sprintf('VWAP_30_%d', OPT_SIGNAL_START*100),'..\results\vwap');
@@ -86,12 +98,8 @@ SIGNAL_EN = cache2cell(p{2},g);
 HPR_ST    = cache2cell(p{3},g);
 HPR_EN    = cache2cell(p{4},g);
 clear p g
-%% TSMOM
-results.N = numel(results.dates);
-% ptf    = NaN(N,OPT_PTFNUM);
-% ptf2   = NaN(N,prod(OPT_PTFNUM_DOUBLE));
-% bin1   = NaN(N, nseries);
-% bin2   = NaN(N, nseries);
+%% Signal and HPR
+results.N      = numel(results.dates);
 results.signal = NaN(results.N, results.nseries);
 results.hpr    = NaN(results.N, results.nseries);
 
@@ -115,31 +123,58 @@ for ii = 2:results.N
     results.signal(ii,:) = signal_en./signal_st-1;
 
     % hpr with 5 min skip
-    results.hpr(ii,:) = hpr_en./hpr_st-1;
-
-    %     if OPT_HASWEIGHTS
-    %         weight = w{ii};
-    %     else
-    %         weight = [];
-    %     end
-    %
-    %     % PTF ret
-    %     [ptf(ii,:), bin1(ii,:)] = portfolio_sort(hpr,signal(ii,:), 'PortfolioNumber',OPT_PTFNUM, 'Weights',weight);
-    %
-    %     % PTF ret
-    %     [ptf2(ii,:), bin2(ii,:)] = portfolio_sort(hpr,{w{ii},signal(ii,:)}, 'PortfolioNumber',OPT_PTFNUM_DOUBLE,...
-    %         'Weights',weight,'IndependentSort',OPT_INDEP_SORT);
+    results.hpr(ii,:)    = hpr_en./hpr_st-1;
 end
 clear signal_en signal_st hpr_en hpr_st s
+%% TSMOM
 
+% Univariate ptfs and stats
 [results.ptfret, results.tsmom] = makeTsmom(results.signal, results.hpr, double(cap{:,2:end}), vol{:,2:end}*sqrt(252),OPT_VOL_TARGET);
 
 results.ptfret_stats = stratstats(results.dates, results.ptfret,'d',0)';
 results.Names        = results.ptfret.Properties.VariableNames;
+
+% Sorted on illiquidity
+idx            = ismember(amihud.permnos, results.permnos);
+amihud.illiq   = amihud.illiq(:,idx);
+amihud.permnos = amihud.permnos(idx);
+[~,pos]        = ismember(results.dates/100, amihud.dates);
+amihud.illiq   = amihud.illiq(pos,:);
+
+OPT.PortfolioNumber    = 5;
+[bins, countd, ptf_id] = binSignal(amihud.illiq,OPT);
+results.ptfret_illiq   = table();
+for p = 1:max(ptf_id)
+    idx          = bins == p;
+    signal       = results.signal;
+    signal(~idx) = NaN;
+    tmp          = makeTsmom(signal, results.hpr,[],[],[],true);
+    
+    results.ptfret_illiq = [results.ptfret_illiq renameVarNames(tmp, strcat(getVariableNames(tmp),sprintf('_%d',p)))];
+end
+
+% Sorted on mkt cap
+OPT.PortfolioNumber    = 5;
+[bins, countd, ptf_id] = binSignal(double(cap{:,2:end}),OPT);
+results.ptfret_cap     = table();
+for p = 1:max(ptf_id)
+    idx          = bins == p;
+    signal       = results.signal;
+    signal(~idx) = NaN;
+    tmp          = makeTsmom(signal, results.hpr,[],[],[],true);
+    
+    results.ptfret_cap = [results.ptfret_cap renameVarNames(tmp, strcat(getVariableNames(tmp),sprintf('_%d',p)))];
+end
 %% Plot
 
 % Cumulated returns univariate
 results.lvl = plot_cumret(results.dates, results.ptfret, OPT_VOL_LAG, true);
+
+% Cumulated returns illiq and tsmom (ew)
+plot_cumret(results.dates, results.ptfret_illiq, 20, true);
+ 
+% Cumulated returns on cap and tsmom (ew)
+plot_cumret(results.dates, results.ptfret_cap, 20, true);
 
 % Correctly predicted and long positions
 total   = sum(~isnan(results.signal),2);
@@ -152,19 +187,13 @@ title '252-day moving averages'
 legend 'correctly predicted' 'long positions'
 ytickformat('percentage')
 
-% dsf = loadresults('dsfquery','..\results');
-% mkt = dsf(dsf.Permno == 84398,:);
-% idt = ismember(mkt.Date, dates);
-%
-% subplot(212)
-% plot(yyyymmdd2datetime(mkt.Date(idt)), mkt.Prc(idt))
 %% Regress on long-only
 results = regressOnLongOnly(results, OPT_REGRESSION_LONG_MINOBS, OPT_REGRESSION_LONG_ALPHA);
 
 %% RA factors
 factors = loadresults('RAfactors');
 
-[~,ia,ib] = intersect(dates, factors.Date);
+[~,ia,ib] = intersect(results.dates, factors.Date);
 ptfret_e  = ptfret_e(ia);
 ptfret_w  = ptfret_w(ia);
 factors   = factors(ib,:);
