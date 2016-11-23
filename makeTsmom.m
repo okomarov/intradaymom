@@ -28,20 +28,16 @@ ptfret.liw_neg = nansum(tsmom.liw(-1),2);
 ptfret.liw     = ptfret.liw_pos + ptfret.liw_neg;
 
 % EW long-only
-tsmom.ew_long  = @() hpr .* (getew(1)+getew(-1));
-ptfret.ew_long = nansum(tsmom.ew_long(),2);
+ptfret.ew_long = ptfret.ew_pos - ptfret.ew_neg;
 
 % VOLW long-only
-tsmom.volw_long  = @() hpr .* (getew(1)+getew(-1)) .* (OPT_VOL_TARGET./vol);
-ptfret.volw_long = nansum(tsmom.volw_long(),2);
+ptfret.volw_long = ptfret.volw_pos - ptfret.volw_neg;
 
 % VW long-only
-tsmom.vw_long  = @() hpr .* (getvw(1)+getvw(-1));
-ptfret.vw_long = nansum(tsmom.vw_long(),2);
+ptfret.vw_long = ptfret.vw_pos - ptfret.vw_neg;
 
 % LIW long-only
-tsmom.liw_long  = @() hpr .* (getliw(signal, isign(1)) + getliw(signal, isign(-1)));
-ptfret.liw_long = nansum(tsmom.liw_long(),2);
+ptfret.liw_long = ptfret.liw_pos - ptfret.liw_neg;
 
 tsmom.isign  = isign;
 tsmom.getew  = getew;
