@@ -1,4 +1,6 @@
-function [ptfret,tsmom] = makeTsmom(signal, hpr, w, vol, OPT_VOL_TARGET)
+function [ptfret,tsmom] = makeTsmom(signal, hpr, w, vol, OPT_VOL_TARGET, only_ew)
+if nargin < 6, only_ew = false; end
+
 % Equal weighted
 ptfret        = table();
 isign         = @(val) sign(signal) == val;
@@ -8,41 +10,47 @@ ptfret.ew_pos = nansum(tsmom.ew(1),2);
 ptfret.ew_neg = nansum(tsmom.ew(-1),2);
 ptfret.ew     = ptfret.ew_pos + ptfret.ew_neg;
 
-% Volatility weighted
-tsmom.volw      = @(val) sign(signal) .* hpr .* getew(val) .* (OPT_VOL_TARGET./vol);
-ptfret.volw_pos = nansum(tsmom.volw(1),2);
-ptfret.volw_neg = nansum(tsmom.volw(-1),2);
-ptfret.volw     = ptfret.volw_pos + ptfret.volw_neg;
+if ~only_ew
 
-% Value weighted
-getvw         = @(val) w .* isign(val) ./ nansum(w .* isign(val), 2);
-tsmom.vw      = @(val) sign(signal) .* hpr .* getvw(val);
-ptfret.vw_pos = nansum(tsmom.vw(1),2);
-ptfret.vw_neg = nansum(tsmom.vw(-1),2);
-ptfret.vw     = ptfret.vw_pos + ptfret.vw_neg;
+    % Volatility weighted
+    tsmom.volw      = @(val) sign(signal) .* hpr .* getew(val) .* (OPT_VOL_TARGET./vol);
+    ptfret.volw_pos = nansum(tsmom.volw(1),2);
+    ptfret.volw_neg = nansum(tsmom.volw(-1),2);
+    ptfret.volw     = ptfret.volw_pos + ptfret.volw_neg;
 
-% Linear increasing in the extremes
-tsmom.liw      = @(val) sign(signal) .* hpr .* getliw(signal, isign(val));
-ptfret.liw_pos = nansum(tsmom.liw(1),2);
-ptfret.liw_neg = nansum(tsmom.liw(-1),2);
-ptfret.liw     = ptfret.liw_pos + ptfret.liw_neg;
 
-% EW long-only
-ptfret.ew_long = ptfret.ew_pos - ptfret.ew_neg;
+    % Value weighted
+    getvw         = @(val) w .* isign(val) ./ nansum(w .* isign(val), 2);
+    tsmom.vw      = @(val) sign(signal) .* hpr .* getvw(val);
+    ptfret.vw_pos = nansum(tsmom.vw(1),2);
+    ptfret.vw_neg = nansum(tsmom.vw(-1),2);
+    ptfret.vw     = ptfret.vw_pos + ptfret.vw_neg;
 
-% VOLW long-only
-ptfret.volw_long = ptfret.volw_pos - ptfret.volw_neg;
+    % Linear increasing in the extremes
+    tsmom.liw      = @(val) sign(signal) .* hpr .* getliw(signal, isign(val));
+    ptfret.liw_pos = nansum(tsmom.liw(1),2);
+    ptfret.liw_neg = nansum(tsmom.liw(-1),2);
+    ptfret.liw     = ptfret.liw_pos + ptfret.liw_neg;
 
-% VW long-only
-ptfret.vw_long = ptfret.vw_pos - ptfret.vw_neg;
+    % EW long-only
+    ptfret.ew_long = ptfret.ew_pos - ptfret.ew_neg;
 
-% LIW long-only
-ptfret.liw_long = ptfret.liw_pos - ptfret.liw_neg;
+    % VOLW long-only
+    ptfret.volw_long = ptfret.volw_pos - ptfret.volw_neg;
 
-tsmom.isign  = isign;
-tsmom.getew  = getew;
-tsmom.getvw  = getvw;
-tsmom.getliw = @getliw;
+    % VW long-only
+    ptfret.vw_long = ptfret.vw_pos - ptfret.vw_neg;
+
+    % LIW long-only
+    ptfret.liw_long = ptfret.liw_pos - ptfret.liw_neg;
+end
+
+if nargout == 2
+    tsmom.isign  = isign;
+    tsmom.getew  = getew;
+    tsmom.getvw  = getvw;
+    tsmom.getliw = @getliw;
+end
 end
 
 function w = getliw(signal, idx)
