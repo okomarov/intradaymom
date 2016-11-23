@@ -138,12 +138,8 @@ results.ptfret_stats = stratstats(results.dates, results.ptfret,'d',0)';
 results.Names        = results.ptfret.Properties.VariableNames;
 %% Plot
 
-% Cumulated returns
-results.lvl = [ones(1,size(results.ptfret{:,:},2)); cumprod(1+results.ptfret{:,:}(OPT_VOL_LAG:end,:))];
-plot(yyyymmdd2datetime(results.dates(OPT_VOL_LAG-1:end)), log(results.lvl))
-title 'Cumulated returns'
-ylabel log
-legend(results.Names,'Interpreter','none');
+% Cumulated returns univariate
+results.lvl = plot_cumret(results.dates, results.ptfret, OPT_VOL_LAG, true);
 
 % Correctly predicted and long positions
 total   = sum(~isnan(results.signal),2);
