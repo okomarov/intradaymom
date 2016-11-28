@@ -3,33 +3,33 @@ if nargin < 6, only_ew = false; end
 
 % Equal weighted
 ptfret        = table();
-isign         = @(val) sign(signal) == val;
-getew         = @(val) isign(val) ./ nansum(isign(val), 2);
-tsmom.ew      = @(val) sign(signal) .* hpr .* getew(val);
-ptfret.ew_pos = nansum(tsmom.ew(1),2);
-ptfret.ew_neg = nansum(tsmom.ew(-1),2);
+isign         = @(signal,val) sign(signal) == val;
+getew         = @(signal,val) isign(signal,val) ./ nansum(isign(signal,val), 2);
+tsmom.ew      = @(signal,hpr,val) sign(signal) .* hpr .* getew(signal,val);
+ptfret.ew_pos = nansum(tsmom.ew(signal,hpr,1),2);
+ptfret.ew_neg = nansum(tsmom.ew(signal,hpr,-1),2);
 ptfret.ew     = ptfret.ew_pos + ptfret.ew_neg;
 
 if ~only_ew
 
     % Volatility weighted
-    tsmom.volw      = @(val) sign(signal) .* hpr .* getew(val) .* (OPT_VOL_TARGET./vol);
-    ptfret.volw_pos = nansum(tsmom.volw(1),2);
-    ptfret.volw_neg = nansum(tsmom.volw(-1),2);
+    tsmom.volw      = @(signal,hpr,vol,val) sign(signal) .* hpr .* getew(signal,val) .* (OPT_VOL_TARGET./vol);
+    ptfret.volw_pos = nansum(tsmom.volw(signal,hpr,vol,1),2);
+    ptfret.volw_neg = nansum(tsmom.volw(signal,hpr,vol,-1),2);
     ptfret.volw     = ptfret.volw_pos + ptfret.volw_neg;
 
 
     % Value weighted
-    getvw         = @(val) w .* isign(val) ./ nansum(w .* isign(val), 2);
-    tsmom.vw      = @(val) sign(signal) .* hpr .* getvw(val);
-    ptfret.vw_pos = nansum(tsmom.vw(1),2);
-    ptfret.vw_neg = nansum(tsmom.vw(-1),2);
+    getvw         = @(signal,val,w) w .* isign(signal,val) ./ nansum(w .* isign(signal,val), 2);
+    tsmom.vw      = @(signal,hpr,w,val) sign(signal) .* hpr .* getvw(signal,val,w);
+    ptfret.vw_pos = nansum(tsmom.vw(signal,hpr,w,1),2);
+    ptfret.vw_neg = nansum(tsmom.vw(signal,hpr,w,-1),2);
     ptfret.vw     = ptfret.vw_pos + ptfret.vw_neg;
 
     % Linear increasing in the extremes
-    tsmom.liw      = @(val) sign(signal) .* hpr .* getliw(signal, isign(val));
-    ptfret.liw_pos = nansum(tsmom.liw(1),2);
-    ptfret.liw_neg = nansum(tsmom.liw(-1),2);
+    tsmom.liw      = @(signal,hpr,val) sign(signal) .* hpr .* getliw(signal, isign(signal,val));
+    ptfret.liw_pos = nansum(tsmom.liw(signal,hpr,1),2);
+    ptfret.liw_neg = nansum(tsmom.liw(signal,hpr,-1),2);
     ptfret.liw     = ptfret.liw_pos + ptfret.liw_neg;
 
     % EW long-only

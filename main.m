@@ -125,14 +125,16 @@ for ii = 2:results.N
     % Signal: Filled back half-day ret
     results.signal(ii,:) = signal_en./signal_st-1;
     % hpr with 5 min skip
-    results.hpr(ii,:) = hpr_en./hpr_st-1;
+    results.hpr(ii,:)    = hpr_en./hpr_st-1;
 end
 clear signal_en signal_st hpr_en hpr_st s
 
 %% TSMOM univariate
 
 % ptfs and stats
-[results.ptfret, results.tsmom] = makeTsmom(results.signal, results.hpr, double(cap{:,2:end}), vol{:,2:end}*sqrt(252),OPT_VOL_TARGET);
+results.cap = double(cap{:,2:end});
+results.vol = vol{:,2:end}*sqrt(252);
+[results.ptfret, results.tsmom] = makeTsmom(results.signal, results.hpr, results.cap, results.vol, OPT_VOL_TARGET);
 
 results.ptfret_stats = stratstats(results.dates, results.ptfret,'d',0)';
 results.Names        = results.ptfret.Properties.VariableNames;
@@ -143,7 +145,7 @@ OPT.PortfolioNumber = OPT_PTFNUM;
 % Sorted on illiquidity
 [~,pos]      = ismember(results.dates/100, amihud.dates);
 amihud.illiq = amihud.illiq(pos,:);
-results = makeTsmomBiv(results,amihud.illiq, 'illiq', OPT);
+results      = makeTsmomBiv(results,amihud.illiq, 'illiq', OPT);
 
 % Sorted on mkt cap
 results = makeTsmomBiv(results, double(cap{:,2:end}), 'cap', OPT);
