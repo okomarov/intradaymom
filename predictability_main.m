@@ -24,5 +24,5 @@ t = {}; c = {}; o = {};
 [t{end+1},c{end+1},o{end+1}] = predictability('PREDICT_MULTI',1,'DATE_RANGE',[20010501,inf]);
 [t{end+1},c{end+1},o{end+1}] = predictability('PREDICT_MULTI',0,'DATE_RANGE',[20010501,inf]);
 % Skip 2007-2009 recession
-[t{end+1},c{end+1},o{end+1}] = predictability('PREDICT_MULTI',1,'DATE_RANGE',[-inf,20071214; 20090616, inf]);
-[t{end+1},c{end+1},o{end+1}] = predictability('PREDICT_MULTI',0,'DATE_RANGE',[-inf,20071214; 20090616, inf]);
+[t{end+1},c{end+1},o{end+1}] = predictability('PREDICT_MULTI',1,'DATE_RANGE',{[-inf,20071214] [20090616, inf]});
+[t{end+1},c{end+1},o{end+1}] = predictability('PREDICT_MULTI',0,'DATE_RANGE',{[-inf,20071214] [20090616, inf]});
