@@ -1,59 +1,28 @@
-function [st_signal, en_signal, st_hpr, end_hpr] = getPrices(type, permnos, s)
+function  prices = getPrices(s, permnos, mst, datapath, price_fl, vwap)
+prices = NaN(1,numel(permnos));
+switch s.type
 
-nseries = numel(permnos);
+    case 'exact'
+        % First
+        if s.hhmm == 930
+            [idx,col]   = ismember(price_fl.Permno, permnos);
+            prices(col) = price_fl.FirstPrice(idx);
+        % Last
+        elseif s.hhmm == 1600
+            [idx,col]   = ismember(price_fl.Permno, permnos);
+            prices(col) = price_fl.LastPrice(idx);
+        % Any other on the 5 minute grid
+        else
+            tmp         = getTaqData([],[],[],[],[],datapath,mst,false);
+            idx         = serial2hhmmss(tmp.Datetime) == s.hhmm*100;
+            [~,col]     = ismember(tmp.Permno(idx), permnos);
+            prices(col) = tmp.Price(idx);
+        end
 
-[st_signal, en_signal, st_hpr, end_hpr] = deal(NaN(1,nseries));
-
-switch type
-    case 'taq_exact'
-
-        % Get sampled data
-        tmp            = getTaqData([],[],[],[],[],s.datapath,s.mst,false);
-        % Price at end of signal
-        idx            = serial2hhmmss(tmp.Datetime) == s.END_TIME_SIGNAL;
-        [~,col]        = ismember(tmp.Permno(idx), permnos);
-        en_signal(col) = tmp.Price(idx); 
-        % Price at beginning of holding period
-        idx            = serial2hhmmss(tmp.Datetime) == s.START_TIME_HPR;
-        [~,col]        = ismember(tmp.Permno(idx), permnos);
-        st_hpr(col)    = tmp.Price(idx);
-        
-        % Price at beginnig of signal
-        [idx,col]      = ismember(s.price_fl.Permno, permnos);
-        st_signal(col) = s.price_fl.FirstPrice(idx);
-        % Price at end of holding period
-        end_hpr(col)   = s.price_fl.LastPrice(idx);
-    
-    case 'taq_vwap'
-        [~,col]        = ismember(s.START_SIGNAL.Permno, permnos);
-        st_signal(col) = getFieldT(s.START_SIGNAL);
-        en_signal(col) = getFieldT(s.END_SIGNAL);
-        st_hpr(col)    = getFieldT(s.START_HPR);
-        end_hpr(col)   = getFieldT(s.END_HPR);
-    
-    case 'taq_exact/vwap'
-        % Signal
-        [idx,col]      = ismember(s.price_fl.Permno, permnos);
-        st_signal(col) = s.price_fl.FirstPrice(idx);
-        
-        tmp            = getTaqData([],[],[],[],[],s.datapath,s.mst,false);
-        idx            = serial2hhmmss(tmp.Datetime) == s.END_TIME_SIGNAL;
-        [~,col]        = ismember(tmp.Permno(idx), permnos);
-        en_signal(col) = tmp.Price(idx); 
-
-        % HPR
-        [idx,col]      = ismember(s.vwap.Permno, permnos);
-        st_hpr(col)    = s.vwap.T123000(idx);
-        end_hpr(col)   = s.vwap.T153000(idx);
-        
-    case 'crsp_exact'
-        
-    
+    case 'vwap'
+        [~,col]     = ismember(vwap.Permno, permnos);
+        f           = fieldnames(vwap);
+        idx         = strncmp('T',f,1);
+        prices(col) = vwap.(f{idx});
 end
-end
-
-function f = getFieldT(s)
-f   = fieldnames(s);
-idx = strncmp('T',f,1);
-f   = s.(f{idx});
 end
