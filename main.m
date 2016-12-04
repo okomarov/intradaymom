@@ -62,12 +62,11 @@ tick = lagpanel(tick,'Permno',OPT_.DAY_LAG);
 tick = myunstack(tick,'Ratio');
 
 clear ia ib pos
-%% Signal and HPR
-sstart = struct('hhmm', 930,'type','vwap','duration',30);
-send   = struct('hhmm',1200,'type','vwap','duration',30);
-hstart = struct('hhmm',1230,'type','vwap','duration',30);
-hend   = struct('hhmm',1530,'type','vwap','duration',30);
-[results.signal, results.hpr] = estimateSignalHpr(sstart, send, hstart, hend, mst, price_fl, OPT_.DATAPATH);
+%% Signal and HPR #1: last half hour
+results.signal = getIntradayRet(struct('hhmm', 930,'type','exact'),...
+                                struct('hhmm',1200,'type','exact'), mst, price_fl, OPT_.DATAPATH);
+results.hpr    = getIntradayRet(struct('hhmm',1530,'type','exact'),...
+                                struct('hhmm',1600,'type','exact'), mst, price_fl, OPT_.DATAPATH);
 
 %% TSMOM univariate
 
