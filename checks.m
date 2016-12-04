@@ -1,3 +1,67 @@
+%% average and std 
+OPT_RANGES   = [930, 1000, 1030, 1100, 1130, 1200, 1230, 1300, 1330, 1400, 1430, 1500, 1530]'*100;
+OPT_NO_MICRO = true;
+OPT_LAGDAY   = 1;
+NSERIES      = 8924;
+NDATES       = 4338;
+
+price_fl = loadresults('price_fl');
+if OPT_NO_MICRO
+    idx      = isMicrocap(price_fl, 'LastPrice',OPT_LAGDAY);
+    price_fl = price_fl(~idx,:);
+end
+
+nranges         = numel(OPT_RANGES);
+[avg_ts,dev_ts] = deal(NaN(NSERIES,nranges));
+[avg_xs,dev_xs] = deal(NaN(NDATES,nranges));
+for ii = 1:nranges
+    tmp   = loadresults(sprintf('halfHourRet%d',OPT_RANGES(ii)));
+    idx   = ismembIdDate(tmp.Permno, tmp.Date, price_fl.Permno, price_fl.Date);
+    tmp   = tmp(idx,:);
+    tname = sprintf('T%d',OPT_RANGES(ii));
+    tmp   = tmp(~isnan(tmp.(tname)),:);
+    
+    % Group by permno
+    [unp,~,g]                        = unique(tmp.Permno);
+    n                                = numel(unp);
+    %     count(1:n,ii)              = accumarray(g,1);
+    [avg_ts(1:n,ii), dev_ts(1:n,ii)] = grpstats(tmp.(tname),g,{'mean','std'});
+    
+    % Group by date
+    [und,~,g]                    = unique(tmp.Date);
+    [avg_xs(:,ii), dev_xs(:,ii)] = grpstats(tmp.(tname),g,{'mean','std'});
+end
+% avg(count < 10) = NaN;
+% dev(count < 10) = NaN;
+
+labels = arrayfun(@(h,m) sprintf('%d:%02d\n', h,m), fix(OPT_RANGES/10000), fix(mod(OPT_RANGES/100,100)),'un',0);
+
+% Plot overall averages
+figure
+set(gcf, 'Position', get(gcf,'Position').*[1,1,1,0.4],'PaperPositionMode','auto')
+favg = @(p) prctile(avg_ts,p,1)*252*100;
+errorbar(1:nranges,favg(50),favg(25)-favg(50),favg(75)-favg(50),'x','MarkerEdgeCOlor','r','LineWidth',0.75);
+set(gca,'YTick',-50:25:50,'Ylim',[-50,50],'XTick',1:nranges, 'XTickLabel',labels(1:2:end,:))
+print('avgret','-depsc','-r200','-loose')
+
+figure
+set(gcf, 'Position', get(gcf,'Position').*[1,1,1,0.4],'PaperPositionMode','auto')
+fdev = @(p) prctile(dev_ts,p,1)*sqrt(252)*100;
+errorbar(1:nranges,fdev(50),fdev(25)-fdev(50),fdev(75)-fdev(50),'x','MarkerEdgeCOlor','r','LineWidth',0.75);
+set(gca,'Ylim',[0,40],'XTick',1:nranges, 'XTickLabel',labels(1:2:end,:))
+print('avgdev','-depsc','-r200','-loose')
+
+% Plot time-evolution
+figure
+set(gcf, 'Position', get(gcf,'Position').*[1,1,1,0.62],'PaperPositionMode','auto')
+dt             = yyyymmdd2datetime(und);
+[unyear,pos,g] = unique(year(dt),'last');
+yret           = splitapply(@(x) prod(1+x)-1, avg_xs, g);
+ribbon(yret)
+set(gca,'Box','on','XGrid','off','YGrid','off','ZGrid','off',...
+    'XTick',1:nranges, 'XTickLabel',labels(1:2:nranges),...
+    'YDir','reverse','Ylim',[1,numel(unyear)],'YTick',2:4:numel(unyear),'YTickLabel',unyear(2:4:end))
+view(-30,25)
 %% Check Open/Close in TAQ vs CRSP
 OPT_NOMICRO = true;
 OPT_OUTLIERS_THRESHOLD = 1;
