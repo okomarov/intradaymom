@@ -29,23 +29,23 @@ mst       = mst(ia,:);
 price_fl  = price_fl(ib,:);
 % isequal(mst.Date, price_fl.Date)
 
+% Permnos
+results.permnos = unique(mst.Permno);
+results.nseries = numel(results.permnos);
+results.dates   = unique(mst.Date);
+
 % Market cap
 cap       = getMktCap(mst,OPT_.DAY_LAG);
 myunstack = @(tb,vname) sortrows(unstack(tb(:,{'Permno','Date',vname}),vname,'Permno'),'Date');
 cap       = myunstack(cap,'Cap');
 
-% Moving average of RV
-vol            = loadresults('volInRange123000-160000');
-[idx,pos]      = ismembIdDate(vol.Permno, vol.Date, mst.Permno, mst.Date);
-vol            = vol(idx,:);
-vol.Sigma      = sqrt(tsmovavg(vol.RV5,OPT_.VOL_AVG, OPT_.VOL_LAG,1));
-vol(:,[1,2,4]) = lagpanel(vol(:,[1,2,4]),'Permno',OPT_.VOL_SHIFT);
-vol            = myunstack(vol,'Sigma');
-
-% Permnos
-results.permnos = unique(mst.Permno);
-results.nseries = numel(results.permnos);
-results.dates   = unique(mst.Date);
+% % Moving average of RV
+% vol            = loadresults('volInRange123000-160000');
+% [idx,pos]      = ismembIdDate(vol.Permno, vol.Date, mst.Permno, mst.Date);
+% vol            = vol(idx,:);
+% vol.Sigma      = sqrt(tsmovavg(vol.RV5,OPT_.VOL_AVG, OPT_.VOL_LAG,1));
+% vol(:,[1,2,4]) = lagpanel(vol(:,[1,2,4]),'Permno',OPT_.VOL_SHIFT);
+% vol            = myunstack(vol,'Sigma');
 
 % Illiquidity
 amihud         = loadresults('illiq');
@@ -67,50 +67,32 @@ results.signal = getIntradayRet(struct('hhmm', 930,'type','exact'),...
                                 struct('hhmm',1200,'type','exact'), mst, price_fl, OPT_.DATAPATH);
 results.hpr    = getIntradayRet(struct('hhmm',1530,'type','exact'),...
                                 struct('hhmm',1600,'type','exact'), mst, price_fl, OPT_.DATAPATH);
-
-%% TSMOM univariate
-
-% ptfs and stats
-results.cap = double(cap{:,2:end});
-results.vol = vol{:,2:end}*sqrt(252);
-[results.ptfret, results.tsmom] = makeTsmom(results.signal, results.hpr, results.cap, results.vol, OPT_.VOL_TARGET);
-
+%% Signal and HPR #2: 13:30 to 15:30
+results.signal = getIntradayRet(struct('hhmm', 930,'type','exact'),...
+                                struct('hhmm',1300,'type','exact'), mst, price_fl, OPT_.DATAPATH);
+results.hpr    = getIntradayRet(struct('hhmm',1330,'type','exact'),...
+                                struct('hhmm',1530,'type','exact'), mst, price_fl, OPT_.DATAPATH);
+%% TSMOM
+% Univariate
+results.ptfret       = makeTsmom(results.signal, results.hpr, [], [], [],1);
 results.ptfret_stats = stratstats(results.dates, results.ptfret,'d',0)';
-results.Names        = results.ptfret.Properties.VariableNames;
 
-%% TSMOM bivariate
-OPT.PortfolioNumber = OPT_.NUM_PTF;
+% Bivariate
+[~,pos] = ismember(results.dates/100, amihud.dates);
 
-% Sorted on illiquidity
-[~,pos]      = ismember(results.dates/100, amihud.dates);
-amihud.illiq = amihud.illiq(pos,:);
-results      = makeTsmomBiv(results,amihud.illiq, 'illiq', OPT);
+results.ptfret_illiq = makeTsmomBiv(results, amihud.illiq(pos,:),  struct('PortfolioNumber',OPT_.NUM_PTF));
+results.ptfret_cap   = makeTsmomBiv(results, double(cap{:,2:end}), struct('PortfolioNumber',OPT_.NUM_PTF));
+results.ptfret_tick  = makeTsmomBiv(results, tick{:,2:end},        struct('PortfolioNumber',OPT_.NUM_PTF));
 
-% Sorted on mkt cap
-results = makeTsmomBiv(results, double(cap{:,2:end}), 'cap', OPT);
+results.ptfret_illiq_stats = stratstats(results.dates, results.ptfret_illiq,'d',0)';
+results.ptfret_cap_stats   = stratstats(results.dates, results.ptfret_cap  ,'d',0)';
+results.ptfret_tick_stats  = stratstats(results.dates, results.ptfret_tick ,'d',0)';
 
-% Sorted on tick ratio
-results = makeTsmomBiv(results, tick{:,2:end}, 'tick', OPT);
-%% Plot
-
-% Cumulated returns univariate
-results.lvl = plot_cumret(results.dates, results.ptfret, OPT_.VOL_LAG, true);
-
-% Bivariate and tsmom ew
-plot_cumret(results.dates, results.ptfret_illiq, 20, true);
-plot_cumret(results.dates, results.ptfret_cap  , 20, true);
-plot_cumret(results.dates, results.ptfret_tick ,  1, true);
-
-% Correctly predicted and long positions
-total   = sum(~isnan(results.signal),2);
-correct = sum(sign(results.signal) == sign(results.hpr),2);
-long    = sum(results.signal > 0,2);
-
-% subplot(211)
-plot(yyyymmdd2datetime(results.dates), movmean([correct,long]./total,[252,0])*100)
-title '252-day moving averages'
-legend 'correctly predicted' 'long positions'
-ytickformat('percentage')
+% Plot
+results.lvl       = plot_cumret(results.dates, results.ptfret      ,  1, true);
+results.lvl_illiq = plot_cumret(results.dates, results.ptfret_illiq, 20, true);
+results.lvl_cap   = plot_cumret(results.dates, results.ptfret_cap  , 20, true);
+results.lvl_tick  = plot_cumret(results.dates, results.ptfret_tick ,  1, true);
 
 %% Regress on long-only
 results = regressOnLongOnly(results, OPT_.REGRESSION_LONG_MINOBS, OPT_.REGRESSION_LONG_ALPHA);
