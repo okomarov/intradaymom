@@ -1,4 +1,4 @@
-%% average and std 
+%% average and std
 OPT_RANGES   = [930, 1000, 1030, 1100, 1130, 1200, 1230, 1300, 1330, 1400, 1430, 1500, 1530]'*100;
 OPT_NO_MICRO = true;
 OPT_LAGDAY   = 1;
@@ -20,13 +20,13 @@ for ii = 1:nranges
     tmp   = tmp(idx,:);
     tname = sprintf('T%d',OPT_RANGES(ii));
     tmp   = tmp(~isnan(tmp.(tname)),:);
-    
+
     % Group by permno
     [unp,~,g]                        = unique(tmp.Permno);
     n                                = numel(unp);
     %     count(1:n,ii)              = accumarray(g,1);
     [avg_ts(1:n,ii), dev_ts(1:n,ii)] = grpstats(tmp.(tname),g,{'mean','std'});
-    
+
     % Group by date
     [und,~,g]                    = unique(tmp.Date);
     [avg_xs(:,ii), dev_xs(:,ii)] = grpstats(tmp.(tname),g,{'mean','std'});
@@ -62,11 +62,32 @@ set(gca,'Box','on','XGrid','off','YGrid','off','ZGrid','off',...
     'XTick',1:nranges, 'XTickLabel',labels(1:2:nranges),...
     'YDir','reverse','Ylim',[1,numel(unyear)],'YTick',2:4:numel(unyear),'YTickLabel',unyear(2:4:end))
 view(-30,25)
+%% Signal prediction rate
+results.signal = getIntradayRet(struct('hhmm', 930,'type','exact'),...
+                                struct('hhmm',1200,'type','exact'), mst, price_fl, OPT_.DATAPATH);
+results.hpr    = getIntradayRet(struct('hhmm',1530,'type','exact'),...
+                                struct('hhmm',1600,'type','exact'), mst, price_fl, OPT_.DATAPATH);
+
+results.signal = getIntradayRet(struct('hhmm', 930,'type','exact'),...
+                                struct('hhmm',1300,'type','exact'), mst, price_fl, OPT_.DATAPATH);
+results.hpr    = getIntradayRet(struct('hhmm',1330,'type','exact'),...
+                                struct('hhmm',1530,'type','exact'), mst, price_fl, OPT_.DATAPATH);
+
+% Correctly predicted and long positions
+total   = sum(~isnan(results.signal),2);
+correct = sum(sign(results.signal) == sign(results.hpr),2);
+long    = sum(results.signal > 0,2);
+
+% subplot(211)
+plot(yyyymmdd2datetime(results.dates), movmean([correct,long]./total,[252,0])*100)
+title '252-day moving averages'
+legend 'correctly predicted' 'long positions'
+ytickformat('percentage')
 %% Check Open/Close in TAQ vs CRSP
-OPT_NOMICRO = true;
+OPT_NOMICRO            = true;
 OPT_OUTLIERS_THRESHOLD = 1;
-OPT_LAGDAY = 1;
-taq = loadresults('sampleFirstLast','..\results');
+OPT_LAGDAY             = 1;
+taq                    = loadresults('sampleFirstLast','..\results');
 % taq = load('D:\TAQ\HF\results\20150921_0044_sampleFirstLast.mat');
 % taq = taq.res;
 
@@ -101,7 +122,7 @@ corr(cmp.TAQret, cmp.CRSPret)
 ir = mean(rets(:,1)-rets(:,2))/std(rets(:,1)-rets(:,2));
 
 [dts,~,subs] = unique(cmp.Date);
-rets = [accumarray(subs,cmp.TAQret,[],@mean), accumarray(subs,cmp.CRSPret,[],@mean)];
+rets         = [accumarray(subs,cmp.TAQret,[],@mean), accumarray(subs,cmp.CRSPret,[],@mean)];
 plot(yyyymmdd2datetime(dts), cumprod(rets+1))
 
 retdiff = abs(cmp.CRSPret - cmp.TAQret);
@@ -118,22 +139,22 @@ ff49 = struct('Permno', xstr2num(getVariableNames(ff49(:,2:end))), ...
     'Data', ff49{:,2:end});
 
 % Intersect permno
-[~,ia,ib] = intersect(industry.Permno, ff49.Permno);
-industry.Data = industry.Data(:,ia);
+[~,ia,ib]       = intersect(industry.Permno, ff49.Permno);
+industry.Data   = industry.Data(:,ia);
 industry.Permno = industry.Permno(ia);
-ff49.Data = ff49.Data(:,ib);
-ff49.Permno = ff49.Permno(ib);
+ff49.Data       = ff49.Data(:,ib);
+ff49.Permno     = ff49.Permno(ib);
 
 % intersect date
-[~,ia,ib] = intersect(industry.Date, ff49.Dates);
+[~,ia,ib]     = intersect(industry.Date, ff49.Dates);
 industry.Data = industry.Data(ia,:);
 industry.Date = industry.Date(ia);
-ff49.Data = ff49.Data(ib,:);
-ff49.Dates = ff49.Dates(ib);
+ff49.Data     = ff49.Data(ib,:);
+ff49.Dates    = ff49.Dates(ib);
 
 [r,c] = find(ff49.Data ~= industry.Data & ff49.Data ~= 0)
 %% CRSP ind correlations
-OPT_LAGDAY = 1;
+OPT_LAGDAY     = 1;
 OPT_HASWEIGHTS = true;
 
 crsp     = loadresults('dsfquery');
@@ -171,4 +192,4 @@ row     = repmat((1:nobs)', 1, nseries);
 subs    = [row(:), double(ff49.Data(:)+1)];
 
 ptfret_vw = accumarray(subs, ret_crsp_w(:),[],@nansum);
-c = corr(ptfret_vw); c(logical(eye(50))) = NaN
+c         = corr(ptfret_vw); c(logical(eye(50))) = NaN
