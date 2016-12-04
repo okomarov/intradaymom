@@ -24,7 +24,7 @@ N      = numel(dates);
 signal = cell(N, 1);
 hpr    = cell(N, 1);
 
-for ii = 1:N
+parfor ii = 1:N
     disp(ii)
 
     signal_st = getPrices(sstart, permnos, mst{ii}, datapath, price_fl{ii}, SIGNAL_ST_VWAP{ii});
