@@ -39,27 +39,44 @@ cap       = getMktCap(mst,OPT_.DAY_LAG);
 myunstack = @(tb,vname) sortrows(unstack(tb(:,{'Permno','Date',vname}),vname,'Permno'),'Date');
 cap       = myunstack(cap,'Cap');
 
-% % Moving average of RV
-% vol            = loadresults('volInRange123000-160000');
-% [idx,pos]      = ismembIdDate(vol.Permno, vol.Date, mst.Permno, mst.Date);
-% vol            = vol(idx,:);
-% vol.Sigma      = sqrt(tsmovavg(vol.RV5,OPT_.VOL_AVG, OPT_.VOL_LAG,1));
-% vol(:,[1,2,4]) = lagpanel(vol(:,[1,2,4]),'Permno',OPT_.VOL_SHIFT);
-% vol            = myunstack(vol,'Sigma');
+% Moving average of RV
+vol            = loadresults('rv5');
+idx            = ismembIdDate(vol.Permno, vol.Date, mst.Permno, mst.Date);
+vol            = vol(idx,:);
+vol.Sigma      = sqrt(tsmovavg(vol.RV,OPT_.VOL_AVG, OPT_.VOL_LAG,1));
+vol(:,[1,2,4]) = lagpanel(vol(:,[1,2,4]),'Permno',OPT_.VOL_SHIFT);
+vol            = myunstack(vol,'Sigma');
 
 % Illiquidity
 amihud         = loadresults('illiq');
 idx            = ismember(amihud.permnos, results.permnos);
 amihud.illiq   = amihud.illiq(:,idx);
 amihud.permnos = amihud.permnos(idx);
-amihud.illiq   = [NaN(OPT_.DAY_LAG, size(amihud.illiq,2)); 
+amihud.illiq   = [NaN(OPT_.DAY_LAG, size(amihud.illiq,2));
                   amihud.illiq(1:end-OPT_.DAY_LAG,:)];
+[~,pos]        = ismember(results.dates/100, amihud.dates);
+amihud.illiq   = amihud.illiq(pos,:);
+
 % Tick ratios
 tick = loadresults('tick');
 idx  = ismembIdDate(tick.Permno, tick.Date, mst.Permno, mst.Date);
 tick = tick(idx,:);
 tick = lagpanel(tick,'Permno',OPT_.DAY_LAG);
 tick = myunstack(tick,'Ratio');
+
+% Volume
+volume = loadresults('volume');
+idx    = ismembIdDate(volume.Permno, volume.Date, mst.Permno, mst.Date);
+volume = volume(idx,:);
+volume = lagpanel(volume,'Permno', OPT_.DAY_LAG);
+volume = myunstack(volume,'Vol');
+
+% % Industry - 49 categories seem too many
+% industry = loadresults('ff49');
+% idx      = ismembIdDate(industry.Permno, industry.Date, mst.Permno, mst.Date);
+% industry = industry(idx,:);
+% industry = lagpanel(industry,'Permno', OPT_.DAY_LAG);
+% industry = myunstack(industry,'FFid');
 
 clear ia ib pos
 %% Signal and HPR #1: last half hour
@@ -90,6 +107,7 @@ results.ptfret_tick_stats  = stratstats(results.dates, results.ptfret_tick ,'d',
 
 % Plot
 results.lvl       = plot_cumret(results.dates, results.ptfret      ,  1, true);
+results.lvl_size  = plot_cumret(results.dates, results.ptfret_size , 20, true);
 results.lvl_illiq = plot_cumret(results.dates, results.ptfret_illiq, 20, true);
 results.lvl_cap   = plot_cumret(results.dates, results.ptfret_cap  , 20, true);
 results.lvl_tick  = plot_cumret(results.dates, results.ptfret_tick ,  1, true);

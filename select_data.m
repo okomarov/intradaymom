@@ -49,6 +49,9 @@ dsf       = loadresults('dsfquery','..\results');
 dsf       = dsf(ia,:);
 master    = master(ib,:);
 
+% Volume
+volume = dsf(:,{'Permno','Date','Vol'});
+
 % Sample first and last price
 price_fl = loadresults('sampleFirstLast','..\results');
 price_fl = addPermno(price_fl);
@@ -72,14 +75,26 @@ idx        = tick.Date/100 > 200101;
 price(idx) = (1/100)./price(idx);
 tick.Ratio = price;
 
+% Volatility
+rv      = loadresults('rvcomponents5m','..\results');
+[~,pos] = ismembIdDate(master.Permno, master.Date, rv.Permno, rv.Date);
+rv      = rv(pos,{'Permno','Date','RV'});
+
+% FF49 industry classification
+ff49 = getFF49IndustryCodes(master,0);
+ff49 = ff49(:,{'Permno','Date','FFid'});
+
 % Add back mkt
 master = [master; mkt];
 
 save('results\master.mat', 'master')
+save('results\volume.mat','volume')
 save('results\price_fl.mat','price_fl')
 save('results\dsfquery.mat','dsf')
 save('results\illiq.mat', 's')
 save('results\tick.mat', 'tick')
+save('results\rv5.mat', 'rv')
+save('results\ff49.mat', 'ff49')
 %% Half hour returns
 clearvars -except master price_fl
 [idx,pos]                = ismembIdDate(master.Permno, master.Date, price_fl.Permno, price_fl.Date);
