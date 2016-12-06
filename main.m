@@ -4,7 +4,7 @@ OPT_.DAY_LAG  = 1;
 % OPT_.RET_USE_OVERNIGHT = false;
 OPT_.DATAPATH = '..\data\TAQ\sampled\5min\nobad_vw';
 
-OPT_.NUM_PTF = 5;
+OPT_.NUM_PTF = 3;
 
 OPT_.VOL_AVG    = 'e';
 OPT_.VOL_LAG    = 60;
@@ -79,37 +79,55 @@ volume = myunstack(volume,'Vol');
 % industry = myunstack(industry,'FFid');
 
 clear ia ib pos
+%% Correlations characteristics
+names   = {'size','illiq','tick','vol','volume'};
+corrmat = corrxs(cat(3, double(cap{:,2:end}), amihud.illiq, tick{:,2:end},...
+                        vol{:,2:end}, double(volume{:,2:end})),...
+                  names);
 %% Signal and HPR #1: last half hour
-results.signal = getIntradayRet(struct('hhmm', 930,'type','exact'),...
-                                struct('hhmm',1200,'type','exact'), mst, price_fl, OPT_.DATAPATH);
-results.hpr    = getIntradayRet(struct('hhmm',1530,'type','exact'),...
-                                struct('hhmm',1600,'type','exact'), mst, price_fl, OPT_.DATAPATH);
+specs.sstart = struct('hhmm', 930,'type','exact');
+specs.send   = struct('hhmm',1200,'type','exact');
+specs.hstart = struct('hhmm',1530,'type','exact');
+specs.hend   = struct('hhmm',1600,'type','exact');
 %% Signal and HPR #2: 13:30 to 15:30
-results.signal = getIntradayRet(struct('hhmm', 930,'type','exact'),...
-                                struct('hhmm',1300,'type','exact'), mst, price_fl, OPT_.DATAPATH);
-results.hpr    = getIntradayRet(struct('hhmm',1330,'type','exact'),...
-                                struct('hhmm',1530,'type','exact'), mst, price_fl, OPT_.DATAPATH);
+specs.sstart = struct('hhmm', 930,'type','exact');
+specs.send   = struct('hhmm',1300,'type','exact');
+specs.hstart = struct('hhmm',1330,'type','exact');
+specs.hstart = struct('hhmm',1530,'type','exact');
+%% Signal and HPR #3: 13:30 to 15:30
+specs.sstart = struct('hhmm', 930,'type','vwap','duration',30);
+specs.send   = struct('hhmm',1200,'type','vwap','duration',30);
+specs.hstart = struct('hhmm',1230,'type','vwap','duration',30);
+specs.hstart = struct('hhmm',1530,'type','vwap','duration',30);
+%% Signal and HPR #4: last half hour vwap
+specs.sstart = struct('hhmm', 930,'type','exact');
+specs.send   = struct('hhmm',1200,'type','exact');
+specs.hstart = struct('hhmm',1525,'type','vwap','duration',5);
+specs.hstart = struct('hhmm',1555,'type','vwap','duration',5);
+%% Signal and HPR #5: 13:30 to 15:30 vwap
+specs.sstart = struct('hhmm', 930,'type','exact');
+specs.send   = struct('hhmm',1300,'type','exact');
+specs.hstart = struct('hhmm',1330,'type','vwap','duration',5);
+specs.hstart = struct('hhmm',1525,'type','vwap','duration',5);
 %% TSMOM
+results.signal = getIntradayRet(specs.sstart,specs.send, mst, price_fl, OPT_.DATAPATH);
+results.hpr    = getIntradayRet(specs.hstart,specs.hend, mst, price_fl, OPT_.DATAPATH);
+
 % Univariate
-results.ptfret       = makeTsmom(results.signal, results.hpr, [], [], [],1);
-results.ptfret_stats = stratstats(results.dates, results.ptfret,'d',0)';
+% results.ptfret       = makeTsmom(results.signal, results.hpr,double(cap{:,2:end}),vol{:,2:end},OPT_.VOL_TARGET);
+[results.ptfret, results.stats] = estimateTsmom(results, OPT_.NUM_PTF, names,...
+                   double(cap{:,2:end}), amihud.illiq, tick{:,2:end},...
+                   vol{:,2:end}, double(volume{:,2:end}),results.signal); 
 
-% Bivariate
-[~,pos] = ismember(results.dates/100, amihud.dates);
+[results.ptfret, results.stats] = estimateTsmom(results, OPT_.NUM_PTF, {'xs'}, results.signal);
 
-results.ptfret_illiq = makeTsmomBiv(results, amihud.illiq(pos,:),  struct('PortfolioNumber',OPT_.NUM_PTF));
-results.ptfret_cap   = makeTsmomBiv(results, double(cap{:,2:end}), struct('PortfolioNumber',OPT_.NUM_PTF));
-results.ptfret_tick  = makeTsmomBiv(results, tick{:,2:end},        struct('PortfolioNumber',OPT_.NUM_PTF));
+getSorts = @(results, feat) reshape(results.stats.(feat){'Annret',:},3,[])*100;
+[getSorts(results,names{1}); getSorts(results,names{2});getSorts(results,names{3});getSorts(results,names{4});getSorts(results,names{5})]
 
-results.ptfret_illiq_stats = stratstats(results.dates, results.ptfret_illiq,'d',0)';
-results.ptfret_cap_stats   = stratstats(results.dates, results.ptfret_cap  ,'d',0)';
-results.ptfret_tick_stats  = stratstats(results.dates, results.ptfret_tick ,'d',0)';
-
-% Plot
+%% Plot
 results.lvl       = plot_cumret(results.dates, results.ptfret      ,  1, true);
 results.lvl_size  = plot_cumret(results.dates, results.ptfret_size , 20, true);
 results.lvl_illiq = plot_cumret(results.dates, results.ptfret_illiq, 20, true);
-results.lvl_cap   = plot_cumret(results.dates, results.ptfret_cap  , 20, true);
 results.lvl_tick  = plot_cumret(results.dates, results.ptfret_tick ,  1, true);
 
 %% Regress on long-only
