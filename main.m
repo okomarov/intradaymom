@@ -6,6 +6,9 @@ OPT_.DATAPATH = '..\data\TAQ\sampled\5min\nobad_vw';
 
 OPT_.NUM_PTF = 3;
 
+OPT_.DATE_RANGE = [];
+OPT_.DATE_RANGE = [-inf, 20010431];
+
 OPT_.VOL_AVG    = 'e';
 OPT_.VOL_LAG    = 60;
 OPT_.VOL_SHIFT  = OPT_.VOL_LAG - 1 + OPT_.DAY_LAG;
@@ -85,47 +88,47 @@ corrmat = corrxs(cat(3, double(cap{:,2:end}), amihud.illiq, tick{:,2:end},...
                         vol{:,2:end}, double(volume{:,2:end})),...
                   names);
 %% Signal and HPR #1: last half hour
-specs.sstart = struct('hhmm', 930,'type','exact');
-specs.send   = struct('hhmm',1200,'type','exact');
-specs.hstart = struct('hhmm',1530,'type','exact');
-specs.hend   = struct('hhmm',1600,'type','exact');
+specs(1) = struct('hhmm', 930,'type','exact');
+specs(2) = struct('hhmm',1200,'type','exact');
+specs(3) = struct('hhmm',1530,'type','exact');
+specs(4) = struct('hhmm',1600,'type','exact');
 %% Signal and HPR #2: 13:30 to 15:30
-specs.sstart = struct('hhmm', 930,'type','exact');
-specs.send   = struct('hhmm',1300,'type','exact');
-specs.hstart = struct('hhmm',1330,'type','exact');
-specs.hstart = struct('hhmm',1530,'type','exact');
+specs(1) = struct('hhmm', 930,'type','exact');
+specs(2) = struct('hhmm',1300,'type','exact');
+specs(3) = struct('hhmm',1330,'type','exact');
+specs(4) = struct('hhmm',1530,'type','exact');
 %% Signal and HPR #3: 13:30 to 15:30
-specs.sstart = struct('hhmm', 930,'type','vwap','duration',30);
-specs.send   = struct('hhmm',1200,'type','vwap','duration',30);
-specs.hstart = struct('hhmm',1230,'type','vwap','duration',30);
-specs.hstart = struct('hhmm',1530,'type','vwap','duration',30);
+specs(1) = struct('hhmm', 930,'type','vwap','duration',30);
+specs(2) = struct('hhmm',1200,'type','vwap','duration',30);
+specs(3) = struct('hhmm',1230,'type','vwap','duration',30);
+specs(4) = struct('hhmm',1530,'type','vwap','duration',30);
 %% Signal and HPR #4: last half hour vwap
-specs.sstart = struct('hhmm', 930,'type','exact');
-specs.send   = struct('hhmm',1200,'type','exact');
-specs.hstart = struct('hhmm',1525,'type','vwap','duration',5);
-specs.hstart = struct('hhmm',1555,'type','vwap','duration',5);
+specs(1) = struct('hhmm', 930,'type','exact');
+specs(2) = struct('hhmm',1200,'type','exact');
+specs(3) = struct('hhmm',1525,'type','vwap','duration',5);
+specs(4) = struct('hhmm',1555,'type','vwap','duration',5);
 %% Signal and HPR #5: 13:30 to 15:30 vwap
-specs.sstart = struct('hhmm', 930,'type','exact');
-specs.send   = struct('hhmm',1300,'type','exact');
-specs.hstart = struct('hhmm',1330,'type','vwap','duration',5);
-specs.hstart = struct('hhmm',1525,'type','vwap','duration',5);
+specs(1) = struct('hhmm', 930,'type','exact');
+specs(2) = struct('hhmm',1300,'type','exact');
+specs(3) = struct('hhmm',1330,'type','vwap','duration',5);
+specs(4) = struct('hhmm',1525,'type','vwap','duration',5);
 %% TSMOM
-results.signal = getIntradayRet(specs.sstart,specs.send, mst, price_fl, OPT_.DATAPATH);
-results.hpr    = getIntradayRet(specs.hstart,specs.hend, mst, price_fl, OPT_.DATAPATH);
+results.signal = getIntradayRet(specs(1),specs(2), mst, price_fl, OPT_.DATAPATH);
+results.hpr    = getIntradayRet(specs(3),specs(4), mst, price_fl, OPT_.DATAPATH);
 
 % Univariate
 % results.ptfret       = makeTsmom(results.signal, results.hpr,double(cap{:,2:end}),vol{:,2:end},OPT_.VOL_TARGET);
-[results.ptfret, results.stats] = estimateTsmom(results, OPT_.NUM_PTF, names,...
+[results.ptfret, results.stats] = estimateTsmom(results, OPT_, names,...
                    double(cap{:,2:end}), amihud.illiq, tick{:,2:end},...
                    vol{:,2:end}, double(volume{:,2:end}),results.signal); 
 
-[results.ptfret, results.stats] = estimateTsmom(results, OPT_.NUM_PTF, {'xs'}, results.signal);
+[results.ptfret, results.stats] = estimateTsmom(results, OPT_, {'xs'}, results.signal);
 
 getSorts = @(results, feat) reshape(results.stats.(feat){'Annret',:},3,[])*100;
 [getSorts(results,names{1}); getSorts(results,names{2});getSorts(results,names{3});getSorts(results,names{4});getSorts(results,names{5})]
 
 %% Plot
-results.lvl       = plot_cumret(results.dates, results.ptfret      ,  1, true);
+results.lvl       = plot_cumret(results.dates, results.ptfret.univariate,  1, true);
 results.lvl_size  = plot_cumret(results.dates, results.ptfret_size , 20, true);
 results.lvl_illiq = plot_cumret(results.dates, results.ptfret_illiq, 20, true);
 results.lvl_tick  = plot_cumret(results.dates, results.ptfret_tick ,  1, true);
