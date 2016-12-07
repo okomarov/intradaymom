@@ -7,7 +7,7 @@ OPT_.DATAPATH = '..\data\TAQ\sampled\5min\nobad_vw';
 OPT_.NUM_PTF = 3;
 
 OPT_.DATE_RANGE = [];
-OPT_.DATE_RANGE = [-inf, 20010431];
+% OPT_.DATE_RANGE = [-inf, 20010431];
 
 OPT_.VOL_AVG    = 'e';
 OPT_.VOL_LAG    = 60;
@@ -117,10 +117,15 @@ results.signal = getIntradayRet(specs(1),specs(2), mst, price_fl, OPT_.DATAPATH)
 results.hpr    = getIntradayRet(specs(3),specs(4), mst, price_fl, OPT_.DATAPATH);
 
 % Univariate
-% results.ptfret       = makeTsmom(results.signal, results.hpr,double(cap{:,2:end}),vol{:,2:end},OPT_.VOL_TARGET);
+results.ptfret.univariate = makeTsmom(results.signal, results.hpr,double(cap{:,2:end}),vol{:,2:end},OPT_.VOL_TARGET);
+results.stats.univariate  = stratstats(results.dates, results.ptfret.univariate,'d',0)';
+
 [results.ptfret, results.stats] = estimateTsmom(results, OPT_, names,...
-                   double(cap{:,2:end}), amihud.illiq, tick{:,2:end},...
-                   vol{:,2:end}, double(volume{:,2:end}),results.signal); 
+                                                    double(cap{:,2:end}),...
+                                                    amihud.illiq, tick{:,2:end},...
+                                                    vol{:,2:end},...
+                                                    double(volume{:,2:end}),...
+                                                    results.signal); 
 
 [results.ptfret, results.stats] = estimateTsmom(results, OPT_, {'xs'}, results.signal);
 

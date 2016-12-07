@@ -6,7 +6,6 @@ else
     idx = true(numel(results.dates),1);
 end
 
-% ptfret.univariate = makeTsmom(results.signal, results.hpr,double(cap{:,2:end}),vol{:,2:end},OPT_.VOL_TARGET);
 ptfret.univariate = makeTsmom(results.signal, results.hpr,[],[],[],1);
 stats.univariate  = stratstats(results.dates(idx,:), ptfret.univariate(idx,:),'d',0)';
 
