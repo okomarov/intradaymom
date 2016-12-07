@@ -1,5 +1,5 @@
 function ret = getIntradayRet(tstart, tend, mst, price_fl, datapath)
-hash  = DataHash([tstart; tend]);
+hash  = DataHash([dropDurationIfExact(tstart); dropDurationIfExact(tend)]);
 fname = fullfile('results',sprintf('intraRet_%s.mat',hash(1:10)));
 try
     load(fname);
@@ -47,5 +47,14 @@ if strcmpi(s.type,'VWAP')
     vwap    = vwap(pos,:);
 else
     vwap = zeros(size(mst,1),0);
+end
+end
+
+function spec = dropDurationIfExact(spec)
+if strcmpi(spec.type,'exact')
+    try
+        spec = rmfield(spec,'duration');
+    catch
+    end
 end
 end

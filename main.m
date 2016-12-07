@@ -103,15 +103,15 @@ specs(2) = struct('hhmm',1200,'type','vwap','duration',30);
 specs(3) = struct('hhmm',1230,'type','vwap','duration',30);
 specs(4) = struct('hhmm',1530,'type','vwap','duration',30);
 %% Signal and HPR #4: last half hour vwap
-specs(1) = struct('hhmm', 930,'type','exact');
-specs(2) = struct('hhmm',1200,'type','exact');
-specs(3) = struct('hhmm',1525,'type','vwap','duration',5);
-specs(4) = struct('hhmm',1555,'type','vwap','duration',5);
+specs(1) = struct('hhmm', 930,'type','exact','duration',0);
+specs(2) = struct('hhmm',1200,'type','exact','duration',0);
+specs(3) = struct('hhmm',1525,'type','vwap' ,'duration',5);
+specs(4) = struct('hhmm',1555,'type','vwap' ,'duration',5);
 %% Signal and HPR #5: 13:30 to 15:30 vwap
-specs(1) = struct('hhmm', 930,'type','exact');
-specs(2) = struct('hhmm',1300,'type','exact');
-specs(3) = struct('hhmm',1330,'type','vwap','duration',5);
-specs(4) = struct('hhmm',1525,'type','vwap','duration',5);
+specs(1) = struct('hhmm', 930,'type','exact','duration',0);
+specs(2) = struct('hhmm',1300,'type','exact','duration',0);
+specs(3) = struct('hhmm',1330,'type','vwap' ,'duration',5);
+specs(4) = struct('hhmm',1525,'type','vwap' ,'duration',5);
 %% TSMOM
 results.signal = getIntradayRet(specs(1),specs(2), mst, price_fl, OPT_.DATAPATH);
 results.hpr    = getIntradayRet(specs(3),specs(4), mst, price_fl, OPT_.DATAPATH);
