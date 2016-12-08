@@ -1,4 +1,4 @@
-function lvl = plot_cumret(dates, ret, nlag, to_monthly)
+function [lvl,dt,h] = plot_cumret(dates, ret, nlag, to_monthly)
 
 REQUIREALL = true;
 
@@ -17,11 +17,11 @@ else
     unit = 'day';
 end
 
-nptf      = size(ret,2);
-lvl       = [ones(1,nptf); cumprod(1+ret)];
-plotdates = yyyymmdd2datetime(dates);
-plotdates = [dateshift(plotdates(1),'end',unit,'previous'); plotdates];
-plot(plotdates, lvl)
+nptf = size(ret,2);
+lvl  = [ones(1,nptf); cumprod(1+ret)];
+dt   = yyyymmdd2datetime(dates);
+dt   = [dateshift(dt(1),'end',unit,'previous'); dt];
+h    = plot(dt, lvl);
 
 title 'Cumulated returns'
 if ~isempty(vnames)
