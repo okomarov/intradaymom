@@ -53,25 +53,115 @@ print('avgdev','-depsc','-r200','-loose')
 
 % Plot time-evolution
 figure
-set(gcf, 'Position', get(gcf,'Position').*[1,1,1,0.62],'PaperPositionMode','auto')
+set(gcf, 'Position', get(gcf,'Position').*[1,1,1,0.72],'PaperPositionMode','auto')
 dt             = yyyymmdd2datetime(und);
 [unyear,pos,g] = unique(year(dt),'last');
 yret           = splitapply(@(x) prod(1+x)-1, avg_xs, g);
-ribbon(yret)
-set(gca,'Box','on','XGrid','off','YGrid','off','ZGrid','off',...
+h = ribbon(yret);
+set(h, {'CData'}, get(h,'ZData'), 'FaceColor','interp','MeshStyle','column')
+set(gca,'TickLabelInterpreter','latex','Layer','Top',...
+    'Box','on','XGrid','off','YGrid','off','ZGrid','off',...
     'XTick',1:nranges, 'XTickLabel',labels(1:2:nranges),...
-    'YDir','reverse','Ylim',[1,numel(unyear)],'YTick',2:4:numel(unyear),'YTickLabel',unyear(2:4:end))
-view(-30,25)
-%% Signal prediction rate
-results.signal = getIntradayRet(struct('hhmm', 930,'type','exact'),...
-                                struct('hhmm',1200,'type','exact'), mst, price_fl, OPT_.DATAPATH);
-results.hpr    = getIntradayRet(struct('hhmm',1530,'type','exact'),...
-                                struct('hhmm',1600,'type','exact'), mst, price_fl, OPT_.DATAPATH);
+    'YDir','reverse','Ylim',[1,numel(unyear)],'YTick',2:4:numel(unyear),'YTickLabel',unyear(2:4:end),...
+    'Zlim',[-0.3,0.3])
+view(-35,25)
+%% Stategy plots
+load data_snapshot.mat
 
-results.signal = getIntradayRet(struct('hhmm', 930,'type','exact'),...
-                                struct('hhmm',1300,'type','exact'), mst, price_fl, OPT_.DATAPATH);
-results.hpr    = getIntradayRet(struct('hhmm',1330,'type','exact'),...
-                                struct('hhmm',1530,'type','exact'), mst, price_fl, OPT_.DATAPATH);
+% Signal and HPR #4: last half hour vwap
+clear specs
+specs(1) = struct('hhmm', 930,'type','exact','duration',0);
+specs(2) = struct('hhmm',1200,'type','exact','duration',0);
+specs(3) = struct('hhmm',1525,'type','vwap' ,'duration',5);
+specs(4) = struct('hhmm',1555,'type','vwap' ,'duration',5);
+rets     = makeTsmom(getIntradayRet(specs(1),specs(2)), getIntradayRet(specs(3),specs(4)), [],[],[],1);
+
+figure
+% Strategy
+set(gcf, 'Position', get(gcf,'Position').*[1,1,1,0.40],'PaperPositionMode','auto')
+[lvl,dt] = plot_cumret(results.dates,rets,1,1);
+legend off, title ''
+% Recession patches
+YLIM = [1,10];
+XLIM = xlim();
+recessions = [730925,731170; 733391,733939];
+X          = recessions-datenum(XLIM(1));
+h          = patch(X(:,[1,1,2,2])', repmat([YLIM fliplr(YLIM)]',1,2),[0.9,0.9,0.9],'EdgeColor','none');
+uistack(h,'bottom')
+% Markers
+hold on
+mrkStep = 15;
+set(gca,'ColorOrderIndex',1)
+plot(dt(1:mrkStep:end),lvl(1:mrkStep:end,1),'x',...
+     dt(1:mrkStep:end),lvl(1:mrkStep:end,2),'o',...
+     dt(1:mrkStep:end),lvl(1:mrkStep:end,3),'^')
+
+set(gca, 'TickLabelInterpreter','latex','Layer','Top',...
+    'YScale','log','YLim',YLIM,'YTick',[1,5,10])
+print('tsmom_last30','-depsc','-r200','-loose')
+
+
+% Signal and HPR #5: 13:30 to 15:30 vwap
+clear specs
+specs(1) = struct('hhmm', 930,'type','exact','duration',0);
+specs(2) = struct('hhmm',1300,'type','exact','duration',0);
+specs(3) = struct('hhmm',1330,'type','vwap' ,'duration',5);
+specs(4) = struct('hhmm',1525,'type','vwap' ,'duration',5);
+rets     = makeTsmom(getIntradayRet(specs(1),specs(2)), getIntradayRet(specs(3),specs(4)), [],[],[],1);
+
+figure
+% Strategy
+set(gcf, 'Position', get(gcf,'Position').*[1,1,1,0.40],'PaperPositionMode','auto')
+[lvl,dt] = plot_cumret(results.dates,rets,1,1);
+legend off, title ''
+% Recession patches
+YLIM = [0.35,15];
+XLIM = xlim();
+recessions = [730925,731170; 733391,733939];
+X          = recessions-datenum(XLIM(1));
+h          = patch(X(:,[1,1,2,2])', repmat([YLIM fliplr(YLIM)]',1,2),[0.9,0.9,0.9],'EdgeColor','none');
+uistack(h,'bottom')
+% Markers
+hold on
+mrkStep = 15;
+set(gca,'ColorOrderIndex',1)
+plot(dt(1:mrkStep:end),lvl(1:mrkStep:end,1),'x',...
+     dt(1:mrkStep:end),lvl(1:mrkStep:end,2),'o',...
+     dt(1:mrkStep:end),lvl(1:mrkStep:end,3),'^')
+
+set(gca, 'TickLabelInterpreter','latex','Layer','Top',...
+    'YScale','log','YLim',YLIM,'YTick',[0.35,1,5,10])
+print('tsmom_afternoon','-depsc','-r200','-loose')
+%% Signal and HPR
+% Signal and HPR #1: last half hour
+specs(1) = struct('hhmm', 930,'type','exact');
+specs(2) = struct('hhmm',1200,'type','exact');
+specs(3) = struct('hhmm',1530,'type','exact');
+specs(4) = struct('hhmm',1600,'type','exact');
+% Signal and HPR #2: 13:30 to 15:30
+specs(1) = struct('hhmm', 930,'type','exact');
+specs(2) = struct('hhmm',1300,'type','exact');
+specs(3) = struct('hhmm',1330,'type','exact');
+specs(4) = struct('hhmm',1530,'type','exact');
+% Signal and HPR #3: 13:30 to 15:30
+specs(1) = struct('hhmm', 930,'type','vwap','duration',30);
+specs(2) = struct('hhmm',1200,'type','vwap','duration',30);
+specs(3) = struct('hhmm',1230,'type','vwap','duration',30);
+specs(4) = struct('hhmm',1530,'type','vwap','duration',30);
+% Signal and HPR #4: last half hour vwap
+specs(1) = struct('hhmm', 930,'type','exact','duration',0);
+specs(2) = struct('hhmm',1200,'type','exact','duration',0);
+specs(3) = struct('hhmm',1525,'type','vwap' ,'duration',5);
+specs(4) = struct('hhmm',1555,'type','vwap' ,'duration',5);
+% Signal and HPR #5: 13:30 to 15:30 vwap
+specs(1) = struct('hhmm', 930,'type','exact','duration',0);
+specs(2) = struct('hhmm',1300,'type','exact','duration',0);
+specs(3) = struct('hhmm',1330,'type','vwap' ,'duration',5);
+specs(4) = struct('hhmm',1525,'type','vwap' ,'duration',5);
+%% Signal prediction rate
+load dates
+results.signal = getIntradayRet(specs(1),specs(2));
+results.hpr    = getIntradayRet(specs(3),specs(4));
 
 % Correctly predicted and long positions
 total   = sum(~isnan(results.signal),2);
@@ -83,6 +173,7 @@ plot(yyyymmdd2datetime(results.dates), movmean([correct,long]./total,[252,0])*10
 title '252-day moving averages'
 legend 'correctly predicted' 'long positions'
 ytickformat('percentage')
+
 %% Check Open/Close in TAQ vs CRSP
 OPT_NOMICRO            = true;
 OPT_OUTLIERS_THRESHOLD = 1;
