@@ -41,14 +41,16 @@ figure
 set(gcf, 'Position', get(gcf,'Position').*[1,1,1,0.4],'PaperPositionMode','auto')
 favg = @(p) prctile(avg_ts,p,1)*252*100;
 errorbar(1:nranges,favg(50),favg(25)-favg(50),favg(75)-favg(50),'x','MarkerEdgeCOlor','r','LineWidth',0.75);
-set(gca,'YTick',-50:25:50,'Ylim',[-50,50],'XTick',1:nranges, 'XTickLabel',labels(1:2:end,:))
+set(gca, 'TickLabelInterpreter','latex','Layer','Top',...
+    'YTick',-50:25:50,'Ylim',[-50,50],'XTick',1:nranges, 'XTickLabel',labels(1:2:end,:))
 print('avgret','-depsc','-r200','-loose')
 
 figure
 set(gcf, 'Position', get(gcf,'Position').*[1,1,1,0.4],'PaperPositionMode','auto')
 fdev = @(p) prctile(dev_ts,p,1)*sqrt(252)*100;
 errorbar(1:nranges,fdev(50),fdev(25)-fdev(50),fdev(75)-fdev(50),'x','MarkerEdgeCOlor','r','LineWidth',0.75);
-set(gca,'Ylim',[0,40],'XTick',1:nranges, 'XTickLabel',labels(1:2:end,:))
+set(gca, 'TickLabelInterpreter','latex','Layer','Top',...
+    'Ylim',[0,40],'XTick',1:nranges, 'XTickLabel',labels(1:2:end,:))
 print('avgdev','-depsc','-r200','-loose')
 
 % Plot time-evolution
