@@ -92,46 +92,49 @@ specs(1) = struct('hhmm', 930,'type','exact');
 specs(2) = struct('hhmm',1200,'type','exact');
 specs(3) = struct('hhmm',1530,'type','exact');
 specs(4) = struct('hhmm',1600,'type','exact');
+fun = @(win,los) win-los;
 %% Signal and HPR #2: 13:30 to 15:30
 specs(1) = struct('hhmm', 930,'type','exact');
 specs(2) = struct('hhmm',1300,'type','exact');
 specs(3) = struct('hhmm',1330,'type','exact');
 specs(4) = struct('hhmm',1530,'type','exact');
-%% Signal and HPR #3: 13:30 to 15:30
-specs(1) = struct('hhmm', 930,'type','vwap','duration',30);
-specs(2) = struct('hhmm',1200,'type','vwap','duration',30);
-specs(3) = struct('hhmm',1230,'type','vwap','duration',30);
-specs(4) = struct('hhmm',1530,'type','vwap','duration',30);
+fun = @(win,los) los-win;
 %% Signal and HPR #4: last half hour vwap
 specs(1) = struct('hhmm', 930,'type','exact','duration',0);
 specs(2) = struct('hhmm',1200,'type','exact','duration',0);
 specs(3) = struct('hhmm',1525,'type','vwap' ,'duration',5);
 specs(4) = struct('hhmm',1555,'type','vwap' ,'duration',5);
+fun = @(win,los) win-los;
 %% Signal and HPR #5: 13:30 to 15:30 vwap
 specs(1) = struct('hhmm', 930,'type','exact','duration',0);
 specs(2) = struct('hhmm',1300,'type','exact','duration',0);
 specs(3) = struct('hhmm',1330,'type','vwap' ,'duration',5);
 specs(4) = struct('hhmm',1525,'type','vwap' ,'duration',5);
+fun = @(win,los) los-win;
+%% Signal and HPR #5: 13:30 to 15:30 vwap
+specs(1) = struct('hhmm', 930,'type','exact','duration',0);
+specs(2) = struct('hhmm',1300,'type','exact','duration',0);
+specs(3) = struct('hhmm',1500,'type','exact','duration',0);
+specs(4) = struct('hhmm',1530,'type','exact','duration',0);
+fun = @(win,los) los-win;
 %% TSMOM
 results.signal = getIntradayRet(specs(1),specs(2), mst, price_fl, OPT_.DATAPATH);
-results.hpr    = getIntradayRet(specs(3),specs(4), mst, price_fl, OPT_.DATAPATH);
+results.hpr    = getIntradayRet(specs(3),specs(4), mst, price_fl, OPT_.DATAPATH)*100;
 
 % Univariate
-results.ptfret.univariate = makeTsmom(results.signal, results.hpr,double(cap{:,2:end}),vol{:,2:end},OPT_.VOL_TARGET);
-results.stats.univariate  = stratstats(results.dates, results.ptfret.univariate,'d',0)';
+% [results.ptfret.univariate, avg_sig] = makeTsmom(results.signal, results.hpr*100, cap,vol,OPT_.VOL_TARGET);
+[results.ptfret.univariate, avg_sig] = makeTsmom(results.signal, results.hpr, fun);
+fstat = @(dt,ptfret,signal) [stratstats(dt, ptfret,'Frequency','d','IsPercentageReturn',true),...
+                             table([nanmean(signal,1), NaN(1,2)]','VariableNames',{'Avgsig'})] ;
+results.stats.univariate  = fstat(results.dates, results.ptfret.univariate,avg_sig)';
 
-[results.ptfret, results.stats] = estimateTsmom(results, OPT_, names,...
-                                                    double(cap{:,2:end}),...
-                                                    amihud.illiq, tick{:,2:end},...
-                                                    vol{:,2:end},...
-                                                    double(volume{:,2:end}),...
-                                                    results.signal); 
+[results.ptfret, results.stats] = estimateTsmom(results, OPT_, names, fun, ...
+                            cap, amihud, tick, vol, volume, results.signal); 
 
-[results.ptfret, results.stats] = estimateTsmom(results, OPT_, {'xs'}, results.signal);
+[results.ptfret, results.stats] = estimateTsmom(results, OPT_, fun, {'xs'}, results.signal);
 
 getSorts = @(results, feat) reshape(results.stats.(feat){'Annret',:},3,[])*100;
 [getSorts(results,names{1}); getSorts(results,names{2});getSorts(results,names{3});getSorts(results,names{4});getSorts(results,names{5})]
-
 %% Plot
 results.lvl       = plot_cumret(results.dates, results.ptfret.univariate,  1, true);
 results.lvl_size  = plot_cumret(results.dates, results.ptfret_size , 20, true);

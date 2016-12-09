@@ -76,7 +76,7 @@ specs(1) = struct('hhmm', 930,'type','exact','duration',0);
 specs(2) = struct('hhmm',1200,'type','exact','duration',0);
 specs(3) = struct('hhmm',1525,'type','vwap' ,'duration',5);
 specs(4) = struct('hhmm',1555,'type','vwap' ,'duration',5);
-rets     = makeTsmom(getIntradayRet(specs(1),specs(2)), getIntradayRet(specs(3),specs(4)), [],[],[],1);
+rets     = makeTsmom(getIntradayRet(specs(1),specs(2)), getIntradayRet(specs(3),specs(4)), @(win,los) win-los);
 
 figure
 % Strategy
@@ -109,7 +109,7 @@ specs(1) = struct('hhmm', 930,'type','exact','duration',0);
 specs(2) = struct('hhmm',1300,'type','exact','duration',0);
 specs(3) = struct('hhmm',1330,'type','vwap' ,'duration',5);
 specs(4) = struct('hhmm',1525,'type','vwap' ,'duration',5);
-rets     = makeTsmom(getIntradayRet(specs(1),specs(2)), getIntradayRet(specs(3),specs(4)), [],[],[],1);
+rets     = makeTsmom(getIntradayRet(specs(1),specs(2)), getIntradayRet(specs(3),specs(4)), @(win,los) los-win);
 
 figure
 % Strategy
@@ -117,7 +117,7 @@ set(gcf, 'Position', get(gcf,'Position').*[1,1,1,0.40],'PaperPositionMode','auto
 [lvl,dt] = plot_cumret(results.dates,rets,1,1);
 legend off, title ''
 % Recession patches
-YLIM = [0.35,15];
+YLIM = [0.08,15];
 XLIM = xlim();
 recessions = [730925,731170; 733391,733939];
 X          = recessions-datenum(XLIM(1));
