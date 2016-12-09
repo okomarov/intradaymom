@@ -66,7 +66,9 @@ set(gca,'TickLabelInterpreter','latex','Layer','Top',...
     'XTick',1:nranges, 'XTickLabel',labels(1:2:nranges),...
     'YDir','reverse','Ylim',[1,numel(unyear)],'YTick',2:4:numel(unyear),'YTickLabel',unyear(2:4:end),...
     'Zlim',[-0.3,0.3])
-view(-35,25)
+view(0,90)
+colorbar('TickLabelInterpreter','latex')
+print('avg_time','-depsc','-r200','-loose')
 %% Stategy plots
 load data_snapshot.mat
 
