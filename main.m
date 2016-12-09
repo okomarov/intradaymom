@@ -17,76 +17,83 @@ OPT_.VOL_TARGET = 0.4;
 OPT_.REGRESSION_LONG_MINOBS = 10;
 OPT_.REGRESSION_LONG_ALPHA  = 0.05;
 %% Data
-
-% Index data
-mst = loadresults('master');
-
-% Taq open price
-price_fl = loadresults('price_fl');
-if OPT_.NO_MICRO
-    idx      = isMicrocap(price_fl, 'LastPrice',OPT_.DAY_LAG);
-    price_fl = price_fl(~idx,:);
+try
+    load data_snapshot.mat
+catch
+    % Index data
+    mst = loadresults('master');
+    
+    % Taq open price
+    price_fl = loadresults('price_fl');
+    if OPT_.NO_MICRO
+        idx      = isMicrocap(price_fl, 'LastPrice',OPT_.DAY_LAG);
+        price_fl = price_fl(~idx,:);
+    end
+    [~,ia,ib] = intersectIdDate(mst.Permno, mst.Date,price_fl.Permno,price_fl.Date);
+    mst       = mst(ia,:);
+    price_fl  = price_fl(ib,:);
+    % isequal(mst.Date, price_fl.Date)
+    
+    % Permnos
+    results.permnos = unique(mst.Permno);
+    results.nseries = numel(results.permnos);
+    results.dates   = unique(mst.Date);
+    
+    % Market cap
+    cap       = getMktCap(mst,OPT_.DAY_LAG);
+    myunstack = @(tb,vname) sortrows(unstack(tb(:,{'Permno','Date',vname}),vname,'Permno'),'Date');
+    cap       = myunstack(cap,'Cap');
+    cap       = log(double(cap{:,2:end}));
+    
+    % Moving average of RV
+    vol            = loadresults('rv5');
+    idx            = ismembIdDate(vol.Permno, vol.Date, mst.Permno, mst.Date);
+    vol            = vol(idx,:);
+    vol.Sigma      = sqrt(tsmovavg(vol.RV,OPT_.VOL_AVG, OPT_.VOL_LAG,1));
+    vol(:,[1,2,4]) = lagpanel(vol(:,[1,2,4]),'Permno',OPT_.VOL_SHIFT);
+    vol            = myunstack(vol,'Sigma');
+    vol            = sqrt(252) * vol{:,2:end};
+    
+    % Illiquidity
+    amihud         = loadresults('illiq');
+    idx            = ismember(amihud.permnos, results.permnos);
+    amihud.illiq   = amihud.illiq(:,idx);
+    amihud.permnos = amihud.permnos(idx);
+    amihud.illiq   = [NaN(OPT_.DAY_LAG, size(amihud.illiq,2));
+        amihud.illiq(1:end-OPT_.DAY_LAG,:)];
+    [~,pos]        = ismember(results.dates/100, amihud.dates);
+    amihud.illiq   = amihud.illiq(pos,:);
+    amihud         = amihud.illiq;
+    
+    % Tick ratios
+    tick = loadresults('tick');
+    idx  = ismembIdDate(tick.Permno, tick.Date, mst.Permno, mst.Date);
+    tick = tick(idx,:);
+    tick = lagpanel(tick,'Permno',OPT_.DAY_LAG);
+    tick = myunstack(tick,'Ratio');
+    tick = tick{:,2:end};
+    
+    % Volume
+    volume = loadresults('volume');
+    idx    = ismembIdDate(volume.Permno, volume.Date, mst.Permno, mst.Date);
+    volume = volume(idx,:);
+    volume = convertColumn(volume,'double','Vol');
+    volume = lagpanel(volume,'Permno', OPT_.DAY_LAG);
+    volume = myunstack(volume,'Vol');
+    volume = log(volume{:,2:end});
+    
+    % % Industry - 49 categories seem too many
+    % industry = loadresults('ff49');
+    % idx      = ismembIdDate(industry.Permno, industry.Date, mst.Permno, mst.Date);
+    % industry = industry(idx,:);
+    % industry = lagpanel(industry,'Permno', OPT_.DAY_LAG);
+    % industry = myunstack(industry,'FFid');
+    save data_snapshot.mat
+    clear ia ib pos
 end
-[~,ia,ib] = intersectIdDate(mst.Permno, mst.Date,price_fl.Permno,price_fl.Date);
-mst       = mst(ia,:);
-price_fl  = price_fl(ib,:);
-% isequal(mst.Date, price_fl.Date)
-
-% Permnos
-results.permnos = unique(mst.Permno);
-results.nseries = numel(results.permnos);
-results.dates   = unique(mst.Date);
-
-% Market cap
-cap       = getMktCap(mst,OPT_.DAY_LAG);
-myunstack = @(tb,vname) sortrows(unstack(tb(:,{'Permno','Date',vname}),vname,'Permno'),'Date');
-cap       = myunstack(cap,'Cap');
-
-% Moving average of RV
-vol            = loadresults('rv5');
-idx            = ismembIdDate(vol.Permno, vol.Date, mst.Permno, mst.Date);
-vol            = vol(idx,:);
-vol.Sigma      = sqrt(tsmovavg(vol.RV,OPT_.VOL_AVG, OPT_.VOL_LAG,1));
-vol(:,[1,2,4]) = lagpanel(vol(:,[1,2,4]),'Permno',OPT_.VOL_SHIFT);
-vol            = myunstack(vol,'Sigma');
-
-% Illiquidity
-amihud         = loadresults('illiq');
-idx            = ismember(amihud.permnos, results.permnos);
-amihud.illiq   = amihud.illiq(:,idx);
-amihud.permnos = amihud.permnos(idx);
-amihud.illiq   = [NaN(OPT_.DAY_LAG, size(amihud.illiq,2));
-                  amihud.illiq(1:end-OPT_.DAY_LAG,:)];
-[~,pos]        = ismember(results.dates/100, amihud.dates);
-amihud.illiq   = amihud.illiq(pos,:);
-
-% Tick ratios
-tick = loadresults('tick');
-idx  = ismembIdDate(tick.Permno, tick.Date, mst.Permno, mst.Date);
-tick = tick(idx,:);
-tick = lagpanel(tick,'Permno',OPT_.DAY_LAG);
-tick = myunstack(tick,'Ratio');
-
-% Volume
-volume = loadresults('volume');
-idx    = ismembIdDate(volume.Permno, volume.Date, mst.Permno, mst.Date);
-volume = volume(idx,:);
-volume = lagpanel(volume,'Permno', OPT_.DAY_LAG);
-volume = myunstack(volume,'Vol');
-
-% % Industry - 49 categories seem too many
-% industry = loadresults('ff49');
-% idx      = ismembIdDate(industry.Permno, industry.Date, mst.Permno, mst.Date);
-% industry = industry(idx,:);
-% industry = lagpanel(industry,'Permno', OPT_.DAY_LAG);
-% industry = myunstack(industry,'FFid');
-
-clear ia ib pos
 %% Correlations characteristics
-names   = {'size','illiq','tick','vol','volume'};
-corrmat = corrxs(cat(3, double(cap{:,2:end}), amihud.illiq, tick{:,2:end},...
-                        vol{:,2:end}, double(volume{:,2:end})),...
-                  names);
+names  = {'size','illiq','tick','vol','volume'};
+corrmat = corrxs(cat(3, cap, amihud, tick, vol, volume), names);
 %% Signal and HPR #1: last half hour
 specs(1) = struct('hhmm', 930,'type','exact');
 specs(2) = struct('hhmm',1200,'type','exact');
@@ -136,11 +143,12 @@ results.stats.univariate  = fstat(results.dates, results.ptfret.univariate,avg_s
 getSorts = @(results, feat) reshape(results.stats.(feat){'Annret',:},3,[])*100;
 [getSorts(results,names{1}); getSorts(results,names{2});getSorts(results,names{3});getSorts(results,names{4});getSorts(results,names{5})]
 %% Plot
-results.lvl       = plot_cumret(results.dates, results.ptfret.univariate,  1, true);
+lvl.univariate_last = plot_cumret(results.dates, results.ptfret.univariate{:,:}./100, 1, true);
+lvl.univariate_last = plot_cumret(results.dates, results.ptfret.univariate{:,:}./100, 1, true);
+
 results.lvl_size  = plot_cumret(results.dates, results.ptfret_size , 20, true);
 results.lvl_illiq = plot_cumret(results.dates, results.ptfret_illiq, 20, true);
 results.lvl_tick  = plot_cumret(results.dates, results.ptfret_tick ,  1, true);
-
 %% Regress on long-only
 results = regressOnLongOnly(results, OPT_.REGRESSION_LONG_MINOBS, OPT_.REGRESSION_LONG_ALPHA);
 
