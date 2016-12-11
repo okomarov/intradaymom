@@ -1,4 +1,4 @@
-function [tstat,coeff,OPT_] = predictability(varargin)
+function [tstat,coeff,R,OPT_] = predictability(varargin)
 %% Opts
 p              = inputParser();
 p.StructExpand = nargin == 1 && isstruct(varargin{1});
@@ -28,7 +28,7 @@ mst = mst(idx,:);
 if OPT_.NO_MICRO
     taq                  = loadresults('price_fl');
     [idx,pos]            = ismembIdDate(mst.Permno, mst.Date,taq.Permno,taq.Date);
-%     mst.FirstPrice(idx,1) = taq.FirstPrice(pos(idx));
+    %     mst.FirstPrice(idx,1) = taq.FirstPrice(pos(idx));
     mst.LastPrice(idx,1) = taq.LastPrice(pos(idx));
     idx                  = isMicrocap(mst, 'LastPrice',OPT_.DAY_LAG);
     mst                  = mst(~idx,:);
@@ -73,11 +73,11 @@ if OPT_.VOL_STANDARDIZE
     % isequal(vol.Permno, ret.Permno)
     % isequal(vol.Date, ret.Date)
     vol = vol{:,3:end};
-    
+
     % Moving average lagged 1 standard deviation
     vol = sqrt(tsmovavg(vol,OPT_.VOL_TYPE, OPT_.VOL_LAG,1));
     vol = [NaN(OPT_.DAY_LAG,size(vol,2)); vol(1:end-OPT_.DAY_LAG,:)]; % ex-ante
-    
+
     % Do not use lags from other permnos
     idx         = [false(OPT_.VOL_SHIFT,1); permnos(1+OPT_.VOL_SHIFT:end) == permnos(1:end-OPT_.VOL_SHIFT)];
     vol(~idx,:) = NaN;
@@ -96,9 +96,9 @@ ret(inan,:) = NaN;
 %% Estimate
 [~,~,g] = unique(dates);
 if OPT_.PREDICT_MULTI
-    [tstat, coeff] = estimateMultivariate(ret,vol,g,OPT_);
+    [tstat, coeff, R] = estimateMultivariate(ret,vol,g,OPT_);
 else
-    [tstat, coeff] = estimateUnivariate(ret,vol,g,OPT_);
+    [tstat, coeff, R] = estimateUnivariate(ret,vol,g,OPT_);
 end
 
 str_ranges = arrayfun(@(x) sprintf('h%d',x),OPT_.RANGES/100,'un',0)';
@@ -108,17 +108,17 @@ end
 f     = @(x) array2table(x,'VariableNames',['c' str_ranges(1:end-OPT_.PREDICT_SKIP-1)],'RowNames',str_ranges(end:-1:2+OPT_.PREDICT_SKIP));
 tstat = f(tstat);
 coeff = f(coeff*100);
-
+R     = f(R);
 end
 
-function [tstat, coeff] = estimateMultivariate(ret,sigma,g,OPT_)
+function [tstat, coeff, R] = estimateMultivariate(ret,sigma,g,OPT_)
 % h13 ~ constant + h12, h11 ... h1
 % h12 ~ constant + h11, h10 ... h1
 % ...
-n              = size(ret,2);
-ncols          = n - OPT_.PREDICT_SKIP;
-nrows          = ncols - 1; % no intercept
-[tstat, coeff] = deal(NaN(nrows, ncols));
+n                 = size(ret,2);
+ncols             = n - OPT_.PREDICT_SKIP;
+nrows             = ncols - 1; % no intercept
+[tstat, coeff, R] = deal(NaN(nrows, ncols));
 for ypos = 2+OPT_.PREDICT_SKIP:n
     xpos = 1:ypos-1-OPT_.PREDICT_SKIP;
     if OPT_.VOL_STANDARDIZE
@@ -128,25 +128,25 @@ for ypos = 2+OPT_.PREDICT_SKIP:n
         X = ret(:,xpos);
         y = ret(:,ypos);
     end
-    tb         = clusterreg(y,X,g,'linear');
-    c          = 1:xpos(end)+1;
-    r          = nrows-ypos + 2 + OPT_.PREDICT_SKIP;
-    tstat(r,c) = tb.tStat;
-    coeff(r,c) = tb.Estimate;
+    c             = 1:xpos(end)+1;
+    r             = nrows-ypos + 2 + OPT_.PREDICT_SKIP;
+    [tb,~,R(r,c)] = clusterreg(y,X,g,'linear');
+    tstat(r,c)    = tb.tStat;
+    coeff(r,c)    = tb.Estimate;
 end
 end
 
-function [tstat, coeff] = estimateUnivariate(ret,sigma,g,OPT_)
+function [tstat, coeff, R] = estimateUnivariate(ret,sigma,g,OPT_)
 % h13 ~ constant + h12
 % h13 ~ constant + h11
 % ...
 % h12 ~ constant + h11
 % h12 ~ constant + h10
 % ...
-n              = size(ret,2);
-ncols          = n - OPT_.PREDICT_SKIP;
-nrows          = ncols - 1; % no intercept
-[tstat, coeff] = deal(NaN(nrows, ncols));
+n                 = size(ret,2);
+ncols             = n - OPT_.PREDICT_SKIP;
+nrows             = ncols - 1; % no intercept
+[tstat, coeff, R] = deal(NaN(nrows, ncols));
 for ypos = 2+OPT_.PREDICT_SKIP:n
     for xpos = 1:ypos-1-OPT_.PREDICT_SKIP
         if OPT_.VOL_STANDARDIZE
@@ -156,11 +156,11 @@ for ypos = 2+OPT_.PREDICT_SKIP:n
             X = ret(:,xpos);
             y = ret(:,ypos);
         end
-        tb         = clusterreg(y,X,g,'linear');
-        c          = xpos+1;
-        r          = nrows-ypos + 2 + OPT_.PREDICT_SKIP;
-        tstat(r,c) = tb.tStat(2);
-        coeff(r,c) = tb.Estimate(2);
+        c             = xpos+1;
+        r             = nrows-ypos + 2 + OPT_.PREDICT_SKIP;
+        [tb,~,R(r,c)] = clusterreg(y,X,g,'linear');
+        tstat(r,c)    = tb.tStat(2);
+        coeff(r,c)    = tb.Estimate(2);
     end
 end
 end
