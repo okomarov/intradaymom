@@ -124,6 +124,12 @@ specs(2) = struct('hhmm',1300,'type','exact','duration',0);
 specs(3) = struct('hhmm',1500,'type','exact','duration',0);
 specs(4) = struct('hhmm',1530,'type','exact','duration',0);
 fun = @(win,los) los-win;
+%% Specification: Guofu
+specs(1) = struct('hhmm', 930,'type','exact','duration',0);
+specs(2) = struct('hhmm',1000,'type','exact','duration',0);
+specs(3) = struct('hhmm',1530,'type','vwap','duration',5);
+specs(4) = struct('hhmm',1555,'type','vwap','duration',5);
+fun = @(win,los) win-los;
 %% TSMOM
 results.signal = getIntradayRet(specs(1),specs(2), mst, price_fl, OPT_.DATAPATH);
 results.hpr    = getIntradayRet(specs(3),specs(4), mst, price_fl, OPT_.DATAPATH)*100;
