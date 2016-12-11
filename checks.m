@@ -69,6 +69,79 @@ set(gca,'TickLabelInterpreter','latex','Layer','Top',...
 view(0,90)
 colorbar('TickLabelInterpreter','latex')
 print('avg_time','-depsc','-r200','-loose')
+%% Volume: average and std
+try
+    load('results\avg_hh_volume.mat')
+catch
+
+    OPT_RANGES   = [930, 1000, 1030, 1100, 1130, 1200, 1230, 1300, 1330, 1400, 1430, 1500, 1530]'*100;
+    OPT_LAGDAY   = 1;
+    NSERIES      = 8924;
+    NDATES       = 4338;
+
+    price_fl = loadresults('price_fl');
+    idx      = isMicrocap(price_fl, 'LastPrice',OPT_LAGDAY);
+    price_fl = price_fl(~idx,:);
+
+    nranges         = numel(OPT_RANGES);
+    [avg_ts,dev_ts] = deal(NaN(NSERIES,nranges));
+    [avg_xs,dev_xs] = deal(NaN(NDATES,nranges));
+    for ii = 1:nranges
+        % Load ret
+        tmp   = loadresults(sprintf('volume_30_%d',OPT_RANGES(ii)),'..\results\vwap');
+        idx   = ismembIdDate(tmp.Permno, tmp.Date, price_fl.Permno, price_fl.Date);
+        tmp   = tmp(idx,:);
+        tname = sprintf('Vol%d',OPT_RANGES(ii));
+        tmp   = tmp(tmp.(tname)~=0,:);
+
+        % Group by permno
+        [unp,~,g]                        = unique(tmp.Permno);
+        n                                = numel(unp);
+        %     count(1:n,ii)              = accumarray(g,1);
+        [avg_ts(1:n,ii), dev_ts(1:n,ii)] = grpstats(double(tmp.(tname)),g,{'mean','std'});
+
+        % Group by date
+        [und,~,g]                    = unique(tmp.Date);
+        [avg_xs(:,ii), dev_xs(:,ii)] = grpstats(double(tmp.(tname)),g,{'mean','std'});
+    end
+    % avg(count < 10) = NaN;
+    % dev(count < 10) = NaN;
+
+    labels = arrayfun(@(h,m) sprintf('%d:%02d\n', h,m), fix(OPT_RANGES/10000), fix(mod(OPT_RANGES/100,100)),'un',0);
+    save results\avg_hh_volume.mat avg_* dev_* labels nranges und
+end
+
+% Plot overall averages
+figure
+set(gcf, 'Position', get(gcf,'Position').*[1,1,1,0.4],'PaperPositionMode','auto')
+favg = @(p) prctile(avg_ts,p,1);
+errorbar(1:nranges,favg(50),favg(25)-favg(50),favg(75)-favg(50),'x','MarkerEdgeCOlor','r','LineWidth',0.75);
+set(gca, 'TickLabelInterpreter','latex','Layer','Top',...
+    'YTick',0:200:600,'Ylim',[0,600],'XTick',1:nranges, 'XTickLabel',labels)
+print('avgvol','-depsc','-r200','-loose')
+
+figure
+set(gcf, 'Position', get(gcf,'Position').*[1,1,1,0.4],'PaperPositionMode','auto')
+fdev = @(p) prctile(dev_ts,p,1);
+errorbar(1:nranges,fdev(50),fdev(25)-fdev(50),fdev(75)-fdev(50),'x','MarkerEdgeCOlor','r','LineWidth',0.75);
+set(gca, 'TickLabelInterpreter','latex','Layer','Top',...
+    'Ylim',[0,1200],'XTick',1:nranges, 'XTickLabel',labels)
+print('avgdevvol','-depsc','-r200','-loose')
+
+% Plot time-evolution
+figure
+set(gcf, 'Position', get(gcf,'Position').*[1,1,1,0.72],'PaperPositionMode','auto')
+dt             = yyyymmdd2datetime(und);
+[unyear,pos,g] = unique(year(dt),'last');
+yret           = splitapply(@mean, avg_xs, g);
+h = ribbon(yret);
+set(h, {'CData'}, get(h,'ZData'), 'FaceColor','interp','MeshStyle','column')
+set(gca,'TickLabelInterpreter','latex','Layer','Top',...
+    'Box','on','XGrid','off','YGrid','off','ZGrid','off',...
+    'XTick',1:nranges, 'XTickLabel',labels(1:2:end),...
+    'Ylim',[1,numel(unyear)],'YTick',2:4:numel(unyear),'YTickLabel',unyear(2:4:end))
+view(25,30)
+print('avg_vol_time','-depsc','-r200','-loose')
 %% Stategy plots
 load data_snapshot.mat
 
