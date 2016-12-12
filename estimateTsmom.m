@@ -6,7 +6,7 @@ else
     idx = true(numel(results.dates),1);
 end
 
-ptfret.univariate = makeTsmom(results.signal, results.hpr*100,fun);
+ptfret.univariate = makeTsmom(results.signal, results.hpr,fun);
 stats.univariate  = stratstats(results.dates(idx,:), ptfret.univariate(idx,:),'Frequency','d','IsPercentageReturn',true)';
 
 if isempty(opt.NUM_PTF) || opt.NUM_PTF < 2
