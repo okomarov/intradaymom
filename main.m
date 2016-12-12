@@ -82,13 +82,14 @@ catch
     tick = tick{:,2:end};
 
     % Volume
-    volume = loadresults('volume');
-    idx    = ismembIdDate(volume.Permno, volume.Date, mst.Permno, mst.Date);
-    volume = volume(idx,:);
-    volume = convertColumn(volume,'double','Vol');
-    volume = lagpanel(volume,'Permno', OPT_.DAY_LAG);
-    volume = myunstack(volume,'Vol');
-    volume = log(volume{:,2:end});
+    volume     = loadresults('volume');
+    idx        = ismembIdDate(volume.Permno, volume.Date, mst.Permno, mst.Date);
+    volume     = volume(idx,:);
+    volume     = convertColumn(volume,'double','Vol');
+    volume.Vol = tsmovavg(volume.Vol, 's', OPT_.VOL_LAG,1);
+    volume     = lagpanel(volume,'Permno', OPT_.VOL_SHIFT);
+    volume     = myunstack(volume,'Vol');
+    volume     = log(volume{:,2:end});
 
     % % Industry - 49 categories seem too many
     % industry = loadresults('ff49');
