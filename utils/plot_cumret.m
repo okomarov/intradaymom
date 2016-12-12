@@ -18,7 +18,7 @@ else
 end
 
 nptf = size(ret,2);
-lvl  = [ones(1,nptf); cumprod(1+ret)];
+lvl  = [ones(1,nptf); cumprod(1+nan2zero(ret))];
 dt   = yyyymmdd2datetime(dates);
 dt   = [dateshift(dt(1),'end',unit,'previous'); dt];
 h    = plot(dt, lvl);
