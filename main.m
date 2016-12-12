@@ -56,7 +56,7 @@ catch
     % Moving average of RV
     vol            = loadresults('rv5');
     idx            = ismembIdDate(vol.Permno, vol.Date, mst.Permno, mst.Date);
-    vol            = vol(idx,:);
+    vol            = vol(idx & ~isnan(vol.RV),:);
     vol.Sigma      = sqrt(tsmovavg(vol.RV,OPT_.VOL_AVG, OPT_.VOL_LAG,1));
     vol(:,[1,2,4]) = lagpanel(vol(:,[1,2,4]),'Permno',OPT_.VOL_SHIFT);
     vol            = myunstack(vol,'Sigma');
