@@ -1,4 +1,4 @@
-function [ptfret, stats, signal, hpr, lvl, dt, h] = estimateTSmom(spec_sig, spec_hpr, mst, price_fl, reton, OPT_, doplot, dates)
+function [ptfret, stats, signal, hpr, lvl, dt, h] = estimateTSmom(spec_sig, spec_hpr, mst, price_fl, reton, dates, OPT_, doplot)
 signal = getIntradayRet(spec_sig, mst, price_fl, OPT_.DATAPATH);
 hpr    = getIntradayRet(spec_hpr, mst, price_fl, OPT_.DATAPATH)*100;
 
