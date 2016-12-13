@@ -105,10 +105,18 @@ names   = {'size','illiq','tick','vol','volume'};
 corrmat = corrxs(cat(3, cap, amihud, tick, vol, volume), names);
 
 %% TSMOM
-[ptfret, stats] = estimateTSmom(specs.NINE_TO_NOON,specs.AFTERNOON_V, mst, price_fl, reton, OPT_, 1, dates);
+ptfret = {}; stats = {};
+[ptfret{end+1,1}, stats{end+1,1}] = estimateTSmom(specs.NINE_TO_NOON, specs.LAST_E,         mst,price_fl,reton,dates,OPT_,false);
+[ptfret{end+1,1}, stats{end+1,1}] = estimateTSmom(specs.NINE_TO_NOON, specs.LAST_V,         mst,price_fl,reton,dates,OPT_,false);
+[ptfret{end+1,1}, stats{end+1,1}] = estimateTSmom(specs.NINE_TO_ONE , specs.AFTERNOON_E, 	mst,price_fl,reton,dates,OPT_,false);
+[ptfret{end+1,1}, stats{end+1,1}] = estimateTSmom(specs.NINE_TO_ONE , specs.AFTERNOON_V,    mst,price_fl,reton,dates,OPT_,false);
+[ptfret{end+1,1}, stats{end+1,1}] = estimateTSmom(specs.NINE_TO_ONE , specs.SLAST_E    ,    mst,price_fl,reton,dates,OPT_,false);
+[ptfret{end+1,1}, stats{end+1,1}] = estimateTSmom(specs.NINE_TO_ONE , specs.SLAST_V    ,    mst,price_fl,reton,dates,OPT_,false);
+[ptfret{end+1,1}, stats{end+1,1}] = estimateTSmom(specs.FIRST       , specs.LAST_E     , 	mst,price_fl,reton,dates,OPT_,false);
+[ptfret{end+1,1}, stats{end+1,1}] = estimateTSmom(specs.FIRST       , specs.LAST_V     , 	mst,price_fl,reton,dates,OPT_,false);
 
 %% XS
-[ptfret, stats] = estimateXSmom(specs.NINE_TO_NOON, specs.AFTERNOON_V, mst, price_fl, reton, OPT_, 1, dates);
+[ptfret{end+1,2}, stats{end+1,2}] = estimateXSmom(specs.NINE_TO_NOON, specs.AFTERNOON_V,    mst,price_fl,reton,dates,OPT_,false);
 
 
 getSorts = @(results, feat) reshape(stats.(feat){'Annret',:},3,[]);
