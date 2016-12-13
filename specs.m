@@ -19,6 +19,9 @@ classdef specs
         FIRST           (struct('hhmm', 930,'type','exact','duration',0),...
                          struct('hhmm',1000,'type','exact','duration',0))
 
+        TEN_TO_ONE      (struct('hhmm',1030,'type','exact','duration',0),...
+                         struct('hhmm',1300,'type','exact','duration',0))
+
         LAST_E          (struct('hhmm',1530,'type','exact','duration',0),...
                          struct('hhmm',1600,'type','exact','duration',0))
 

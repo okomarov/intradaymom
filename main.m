@@ -114,6 +114,8 @@ ptfret = {}; stats = {};
 [ptfret{end+1,1}, stats{end+1,1}] = estimateTSmom(specs.NINE_TO_ONE , specs.SLAST_V    ,    mst,price_fl,reton,dates,OPT_,false);
 [ptfret{end+1,1}, stats{end+1,1}] = estimateTSmom(specs.FIRST       , specs.LAST_E     , 	mst,price_fl,reton,dates,OPT_,false);
 [ptfret{end+1,1}, stats{end+1,1}] = estimateTSmom(specs.FIRST       , specs.LAST_V     , 	mst,price_fl,reton,dates,OPT_,false);
+[ptfret{end+1,1}, stats{end+1,1}] = estimateTSmom(specs.TEN_TO_ONE  , specs.SLAST_E     , 	mst,price_fl,reton,dates,OPT_,false);
+[ptfret{end+1,1}, stats{end+1,1}] = estimateTSmom(specs.TEN_TO_ONE  , specs.SLAST_V     , 	mst,price_fl,reton,dates,OPT_,false);
 
 %% XS
 [ptfret{end+1,2}, stats{end+1,2}] = estimateXSmom(specs.NINE_TO_NOON, specs.AFTERNOON_V,    mst,price_fl,reton,dates,OPT_,false);
