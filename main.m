@@ -35,9 +35,9 @@ catch
     % isequal(mst.Date, price_fl.Date)
 
     % Permnos
-    results.permnos = unique(mst.Permno);
-    results.nseries = numel(results.permnos);
-    results.dates   = unique(mst.Date);
+    permnos = unique(mst.Permno);
+    nseries = numel(permnos);
+    dates   = unique(mst.Date);
 
     % Market cap
     cap       = getMktCap(mst,OPT_.DAY_LAG);
@@ -64,12 +64,12 @@ catch
 
     % Illiquidity
     amihud         = loadresults('illiq');
-    idx            = ismember(amihud.permnos, results.permnos);
+    idx            = ismember(amihud.permnos, permnos);
     amihud.illiq   = amihud.illiq(:,idx);
     amihud.permnos = amihud.permnos(idx);
     amihud.illiq   = [NaN(OPT_.DAY_LAG, size(amihud.illiq,2));
                       amihud.illiq(1:end-OPT_.DAY_LAG,:)];
-    [~,pos]        = ismember(results.dates/100, amihud.dates);
+    [~,pos]        = ismember(dates/100, amihud.dates);
     amihud.illiq   = amihud.illiq(pos,:);
     amihud         = amihud.illiq;
 
@@ -97,94 +97,21 @@ catch
     % industry = industry(idx,:);
     % industry = lagpanel(industry,'Permno', OPT_.DAY_LAG);
     % industry = myunstack(industry,'FFid');
-    save data_snapshot.mat
     clear ia ib pos idx
+    save data_snapshot.mat
 end
 %% Correlations characteristics
 names   = {'size','illiq','tick','vol','volume'};
 corrmat = corrxs(cat(3, cap, amihud, tick, vol, volume), names);
-%% Last half: exact
-clear specs
-specs(1) = struct('hhmm', 930,'type','exact');
-specs(2) = struct('hhmm',1200,'type','exact');
-specs(3) = struct('hhmm',1530,'type','exact');
-specs(4) = struct('hhmm',1600,'type','exact');
-fun      = @(win,los) win-los;
-%% Last half: vwap
-clear specs
-specs(1) = struct('hhmm', 930,'type','exact','duration',0);
-specs(2) = struct('hhmm',1200,'type','exact','duration',0);
-specs(3) = struct('hhmm',1530,'type','vwap' ,'duration',5);
-specs(4) = struct('hhmm',1555,'type','vwap' ,'duration',5);
-fun      = @(win,los) win-los;
-%% Afternoon: exact
-clear specs
-specs(1) = struct('hhmm', 930,'type','exact');
-specs(2) = struct('hhmm',1300,'type','exact');
-specs(3) = struct('hhmm',1330,'type','exact');
-specs(4) = struct('hhmm',1530,'type','exact');
-fun      = @(win,los) win-los;
-%% Afternoon: vwap
-clear specs
-specs(1) = struct('hhmm', 930,'type','exact','duration',0);
-specs(2) = struct('hhmm',1300,'type','exact','duration',0);
-specs(3) = struct('hhmm',1330,'type','vwap' ,'duration',5);
-specs(4) = struct('hhmm',1525,'type','vwap' ,'duration',5);
-fun      = @(win,los) win-los;
-%% Second last: vwap
-clear specs
-specs(1) = struct('hhmm', 930,'type','exact','duration',0);
-specs(2) = struct('hhmm',1300,'type','exact','duration',0);
-specs(3) = struct('hhmm',1500,'type','vwap','duration',5);
-specs(4) = struct('hhmm',1525,'type','vwap','duration',5);
-fun      = @(win,los) win-los;
-%% Guofu: vwap
-clear specs
-specs(1) = struct('hhmm', 930,'type','exact','duration',0);
-specs(2) = struct('hhmm',1000,'type','exact','duration',0);
-specs(3) = struct('hhmm',1530,'type','vwap','duration',5);
-specs(4) = struct('hhmm',1555,'type','vwap','duration',5);
-fun      = @(win,los) win-los;
+
 %% TSMOM
-results.signal = getIntradayRet(specs(1),specs(2), mst, price_fl, OPT_.DATAPATH);
-results.hpr    = getIntradayRet(specs(3),specs(4), mst, price_fl, OPT_.DATAPATH)*100;
+[ptfret, stats] = estimateTSmom(specs.NINE_TO_NOON,specs.AFTERNOON_V, mst, price_fl, reton, OPT_, 1, dates);
 
-if OPT_.RET_USE_OVERNIGHT
-    results.signal = (1+results.signal) .* (1 + reton) - 1;
-end
-
-% Univariate
-[results.ptfret.univariate, avg_sig] = makeTsmom(results.signal, results.hpr, fun);
-
-fstat = @(dt,ptfret,signal) [stratstats(dt, ptfret,'Frequency','d','IsPercentageReturn',true),...
-                             table([nanmean(signal,1), NaN(1,size(ptfret,2) - size(signal,2))]',...
-                             'VariableNames',{'Avgsig'})] ;
-
-results.stats.univariate = fstat(results.dates, results.ptfret.univariate,avg_sig)';
-
-plot_cumret(results.dates, results.ptfret.univariate{:,:}./100, 1, true);
-legend win lose wml long
-legend location northwest
 %% XS
-results.signal = getIntradayRet(specs(1),specs(2), mst, price_fl, OPT_.DATAPATH);
-results.hpr    = getIntradayRet(specs(3),specs(4), mst, price_fl, OPT_.DATAPATH)*100;
+[ptfret, stats] = estimateXSmom(specs.NINE_TO_NOON, specs.AFTERNOON_V, mst, price_fl, reton, OPT_, 1, dates);
 
-if OPT_.RET_USE_OVERNIGHT
-    results.signal = (1+results.signal) .* (1 + reton) - 1;
-end
 
-% [results.ptfret, results.stats] = estimateTsmom(results, OPT_, names, fun, ...
-%                             cap, amihud, tick, vol, volume, results.signal); 
-
-[results.ptfret.xs, ~, ~, avg_sig] = portfolio_sort(results.hpr, results.signal,'PortfolioNumber',5);
-results.ptfret.xs                  = array2table(results.ptfret.xs);
-results.stats.xs              = fstat(results.dates, results.ptfret.xs,avg_sig)';
-
-plot_cumret(results.dates, results.ptfret.xs{:,:}./100, 1, true);
-legend 1 2 3 4 5
-legend location northwest
-
-% getSorts = @(results, feat) reshape(results.stats.(feat){'Annret',:},3,[]);
+getSorts = @(results, feat) reshape(stats.(feat){'Annret',:},3,[]);
 % [getSorts(results,names{1}); getSorts(results,names{2});getSorts(results,names{3});getSorts(results,names{4});getSorts(results,names{5})]
 %% Plot
 lvl.univariate_last = plot_cumret(results.dates, results.ptfret.univariate{:,:}./100, 1, true);
