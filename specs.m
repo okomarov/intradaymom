@@ -31,6 +31,9 @@ classdef specs
         AFTERNOON_V     (struct('hhmm',1330,'type','vwap' ,'duration',5),...
                          struct('hhmm',1525,'type','vwap' ,'duration',5))
 
+        SLAST_E         (struct('hhmm',1500,'type','exact','duration',0),...
+                         struct('hhmm',1530,'type','exact','duration',0))
+
         SLAST_V         (struct('hhmm',1500,'type','vwap' ,'duration',5),...
                          struct('hhmm',1525,'type','vwap' ,'duration',5))
     end
