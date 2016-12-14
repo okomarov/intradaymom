@@ -6,7 +6,7 @@ if OPT_.RET_USE_OVERNIGHT
     signal = (1+signal) .* (1 + reton) - 1;
 end
 
-[ptfret, ~, ~, avg_sig] = portfolio_sort(hpr, signal,'PortfolioNumber',OPT_.NUM_PTF);
+[ptfret, ~, ~, avg_sig] = portfolio_sort(hpr, signal,'PortfolioNumber',OPT_.NUM_PTF_UNI);
 
 ptfret = array2table(ptfret);
 stats  = fstat(dates, ptfret, avg_sig)';

@@ -4,7 +4,7 @@ OPT_.DAY_LAG           = 1;
 OPT_.RET_USE_OVERNIGHT = false;
 OPT_.DATAPATH          = '..\data\TAQ\sampled\5min\nobad_vw';
 
-OPT_.NUM_PTF = 3;
+OPT_.NUM_PTF_UNI = 10;
 
 OPT_.DATE_RANGE = [];
 % OPT_.DATE_RANGE = [-inf, 20010431];
