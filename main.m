@@ -108,39 +108,36 @@ corrmat = corrxs(cat(3, cap, amihud, tick, vol, volume), names);
 ptfret_ts = {}; stats_ts = {};
 [ptfret_ts{end+1}, stats_ts{end+1}] = estimateTSmom(specs.NINE_TO_NOON, specs.LAST_E,       mst,price_fl,reton,dates,OPT_,false);
 [ptfret_ts{end+1}, stats_ts{end+1}] = estimateTSmom(specs.NINE_TO_NOON, specs.LAST_V,       mst,price_fl,reton,dates,OPT_,false);
-% These are similar to NINE_TO_NOON
-[ptfret_ts{end+1}, stats_ts{end+1}] = estimateTSmom(specs.TEN_TO_ONE  , specs.LAST_E,       mst,price_fl,reton,dates,OPT_,true);
-[ptfret_ts{end+1}, stats_ts{end+1}] = estimateTSmom(specs.FIRST       , specs.LAST_E,       mst,price_fl,reton,dates,OPT_,true);
+% % These are similar to NINE_TO_NOON
+% [ptfret_ts{end+1}, stats_ts{end+1}] = estimateTSmom(specs.TEN_TO_ONE  , specs.LAST_E,       mst,price_fl,reton,dates,OPT_,true);
+% [ptfret_ts{end+1}, stats_ts{end+1}] = estimateTSmom(specs.FIRST       , specs.LAST_E,       mst,price_fl,reton,dates,OPT_,true);
 
-[ptfret_ts{end+1}, stats_ts{end+1}] = estimateTSmom(specs.NINE_TO_ONE , specs.AFTERNOON_E, 	mst,price_fl,reton,dates,OPT_,true);
+[ptfret_ts{end+1}, stats_ts{end+1}] = estimateTSmom(specs.NINE_TO_ONE , specs.AFTERNOON_E, 	mst,price_fl,reton,dates,OPT_,false);
 [ptfret_ts{end+1}, stats_ts{end+1}] = estimateTSmom(specs.NINE_TO_ONE , specs.AFTERNOON_V,  mst,price_fl,reton,dates,OPT_,false);
 
-% Similar to NINE_TO_ONE predicting AFTERNOON
-[ptfret_ts{end+1}, stats_ts{end+1}] = estimateTSmom(specs.NINE_TO_ONE , specs.SLAST_E,      mst,price_fl,reton,dates,OPT_,true);
-[ptfret_ts{end+1}, stats_ts{end+1}] = estimateTSmom(specs.TEN_TO_ONE  , specs.SLAST_E,      mst,price_fl,reton,dates,OPT_,true);
+% % Similar to NINE_TO_ONE predicting AFTERNOON
+% [ptfret_ts{end+1}, stats_ts{end+1}] = estimateTSmom(specs.NINE_TO_ONE , specs.SLAST_E,      mst,price_fl,reton,dates,OPT_,true);
+% [ptfret_ts{end+1}, stats_ts{end+1}] = estimateTSmom(specs.TEN_TO_ONE  , specs.SLAST_E,      mst,price_fl,reton,dates,OPT_,true);
 
-corrmat = tril(corr(cell2mat(cellfun(@(x) x.ew_fun, ptfret_ts,'un',0)),'rows','pairwise'),-1);
-corrmat(corrmat == 0) = NaN;
+% corrmat = tril(corr(cell2mat(cellfun(@(x) x.ew_fun, ptfret_ts,'un',0)),'rows','pairwise'),-1);
+% corrmat(corrmat == 0) = NaN;
 %% XS
 ptfret_xs = {}; stats_xs = {};
 [ptfret_xs{end+1}, stats_xs{end+1}] = estimateXSmom(specs.NINE_TO_NOON, specs.LAST_E,       mst,price_fl,reton,dates,OPT_,false);
 [ptfret_xs{end+1}, stats_xs{end+1}] = estimateXSmom(specs.NINE_TO_NOON, specs.LAST_V,       mst,price_fl,reton,dates,OPT_,false);
-% These are similar to NINE_TO_NOON
-[ptfret_xs{end+1}, stats_xs{end+1}] = estimateXSmom(specs.TEN_TO_ONE  , specs.LAST_E,       mst,price_fl,reton,dates,OPT_,true);
-[ptfret_xs{end+1}, stats_xs{end+1}] = estimateXSmom(specs.FIRST       , specs.LAST_E,       mst,price_fl,reton,dates,OPT_,true);
+% % These are similar to NINE_TO_NOON
+% [ptfret_xs{end+1}, stats_xs{end+1}] = estimateXSmom(specs.TEN_TO_ONE  , specs.LAST_E,       mst,price_fl,reton,dates,OPT_,true);
+% [ptfret_xs{end+1}, stats_xs{end+1}] = estimateXSmom(specs.FIRST       , specs.LAST_E,       mst,price_fl,reton,dates,OPT_,true);
 
 [ptfret_xs{end+1}, stats_xs{end+1}] = estimateXSmom(specs.NINE_TO_ONE , specs.AFTERNOON_E, 	mst,price_fl,reton,dates,OPT_,true);
 [ptfret_xs{end+1}, stats_xs{end+1}] = estimateXSmom(specs.NINE_TO_ONE , specs.AFTERNOON_V,  mst,price_fl,reton,dates,OPT_,false);
 
-% Similar to NINE_TO_ONE predicting AFTERNOON
-[ptfret_xs{end+1}, stats_xs{end+1}] = estimateXSmom(specs.NINE_TO_ONE , specs.SLAST_E,      mst,price_fl,reton,dates,OPT_,true);
-[ptfret_xs{end+1}, stats_xs{end+1}] = estimateXSmom(specs.TEN_TO_ONE  , specs.SLAST_E,      mst,price_fl,reton,dates,OPT_,true);
+% % Similar to NINE_TO_ONE predicting AFTERNOON
+% [ptfret_xs{end+1}, stats_xs{end+1}] = estimateXSmom(specs.NINE_TO_ONE , specs.SLAST_E,      mst,price_fl,reton,dates,OPT_,true);
+% [ptfret_xs{end+1}, stats_xs{end+1}] = estimateXSmom(specs.TEN_TO_ONE  , specs.SLAST_E,      mst,price_fl,reton,dates,OPT_,true);
 
-corrmat = tril(corr(cell2mat(cellfun(@(x) x{:,1}+x{:,end}, ptfret_xs,'un',0)),'rows','pairwise'),-1);
-corrmat(corrmat == 0) = NaN;
-
-getSorts = @(results, feat) reshape(stats.(feat){'Annret',:},3,[]);
-% [getSorts(results,names{1}); getSorts(results,names{2});getSorts(results,names{3});getSorts(results,names{4});getSorts(results,names{5})]
+% corrmat = tril(corr(cell2mat(cellfun(@(x) x{:,end}, ptfret_xs,'un',0)),'rows','pairwise'),-1);
+% corrmat(corrmat == 0) = NaN;
 %% Plot
 lvl.univariate_last = plot_cumret(results.dates, results.ptfret.univariate{:,:}./100, 1, true);
 

@@ -8,7 +8,7 @@ end
 
 [ptfret, ~, ~, avg_sig] = portfolio_sort(hpr, signal,'PortfolioNumber',OPT_.NUM_PTF_UNI);
 
-ptfret = array2table(ptfret);
+ptfret = array2table([ptfret ptfret(:,1)+ptfret(:,end)]);
 stats  = fstat(dates, ptfret, avg_sig)';
 
 if doplot
