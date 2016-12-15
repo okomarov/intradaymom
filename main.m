@@ -91,12 +91,12 @@ catch
     volume     = myunstack(volume,'Vol');
     volume     = log(volume{:,2:end});
 
-    % % Industry - 49 categories seem too many
-    % industry = loadresults('ff49');
-    % idx      = ismembIdDate(industry.Permno, industry.Date, mst.Permno, mst.Date);
-    % industry = industry(idx,:);
-    % industry = lagpanel(industry,'Permno', OPT_.DAY_LAG);
-    % industry = myunstack(industry,'FFid');
+    % Industry
+    mst      = getFFIndustryCodes(mst,12);
+    industry = lagpanel(mst(:,{'Permno','Date','FFid'}),'Permno', OPT_.DAY_LAG);
+    industry = myunstack(industry,'FFid');
+    industry = industry{:,2:end};
+
     clear ia ib pos idx
     save data_snapshot.mat
 end
