@@ -97,44 +97,54 @@ catch
     industry = myunstack(industry,'FFid');
     industry = industry{:,2:end};
 
-    clear ia ib pos idx
-    save data_snapshot.mat
+    % Reorganize into one data structure
+    data.mst      = mst;
+    data.price_fl = price_fl;
+    data.cap      = cap;
+    data.reton    = reton;
+    data.tick     = tick;
+    data.vol      = vol;
+    data.volume = volume;
+    data.industry = industry;
+    data.amihud = amihud;
+
+    save data_snapshot.mat data dates permnos OPT_ -v7.3
 end
 %% Correlations characteristics
 names   = {'size','illiq','tick','vol','volume'};
-corrmat = corrxs(cat(3, cap, amihud, tick, vol, volume), names);
+corrmat = corrxs(cat(3, data.cap, data.amihud, data.tick, data.vol, data.volume), names);
 
 %% TSMOM
 ptfret_ts = {}; stats_ts = {};
-[ptfret_ts{end+1}, stats_ts{end+1}] = estimateTSmom(specs.NINE_TO_NOON, specs.LAST_E,       mst,price_fl,reton,dates,OPT_,false);
-[ptfret_ts{end+1}, stats_ts{end+1}] = estimateTSmom(specs.NINE_TO_NOON, specs.LAST_V,       mst,price_fl,reton,dates,OPT_,false);
+[ptfret_ts{end+1}, stats_ts{end+1}] = estimateTSmom(specs.NINE_TO_NOON, specs.LAST_E,       data,dates,OPT_,false);
+[ptfret_ts{end+1}, stats_ts{end+1}] = estimateTSmom(specs.NINE_TO_NOON, specs.LAST_V,       data,dates,OPT_,false);
 % % These are similar to NINE_TO_NOON
-% [ptfret_ts{end+1}, stats_ts{end+1}] = estimateTSmom(specs.TEN_TO_ONE  , specs.LAST_E,       mst,price_fl,reton,dates,OPT_,true);
-% [ptfret_ts{end+1}, stats_ts{end+1}] = estimateTSmom(specs.FIRST       , specs.LAST_E,       mst,price_fl,reton,dates,OPT_,true);
+% [ptfret_ts{end+1}, stats_ts{end+1}] = estimateTSmom(specs.TEN_TO_ONE  , specs.LAST_E,       data,dates,OPT_,true);
+% [ptfret_ts{end+1}, stats_ts{end+1}] = estimateTSmom(specs.FIRST       , specs.LAST_E,       data,dates,OPT_,true);
 
-[ptfret_ts{end+1}, stats_ts{end+1}] = estimateTSmom(specs.NINE_TO_ONE , specs.AFTERNOON_E, 	mst,price_fl,reton,dates,OPT_,false);
-[ptfret_ts{end+1}, stats_ts{end+1}] = estimateTSmom(specs.NINE_TO_ONE , specs.AFTERNOON_V,  mst,price_fl,reton,dates,OPT_,false);
+[ptfret_ts{end+1}, stats_ts{end+1}] = estimateTSmom(specs.NINE_TO_ONE , specs.AFTERNOON_E, 	data,dates,OPT_,false);
+[ptfret_ts{end+1}, stats_ts{end+1}] = estimateTSmom(specs.NINE_TO_ONE , specs.AFTERNOON_V,  data,dates,OPT_,false);
 
 % % Similar to NINE_TO_ONE predicting AFTERNOON
-% [ptfret_ts{end+1}, stats_ts{end+1}] = estimateTSmom(specs.NINE_TO_ONE , specs.SLAST_E,      mst,price_fl,reton,dates,OPT_,true);
-% [ptfret_ts{end+1}, stats_ts{end+1}] = estimateTSmom(specs.TEN_TO_ONE  , specs.SLAST_E,      mst,price_fl,reton,dates,OPT_,true);
+% [ptfret_ts{end+1}, stats_ts{end+1}] = estimateTSmom(specs.NINE_TO_ONE , specs.SLAST_E,      data,dates,OPT_,true);
+% [ptfret_ts{end+1}, stats_ts{end+1}] = estimateTSmom(specs.TEN_TO_ONE  , specs.SLAST_E,      data,dates,OPT_,true);
 
 % corrmat = tril(corr(cell2mat(cellfun(@(x) x.ew_fun, ptfret_ts,'un',0)),'rows','pairwise'),-1);
 % corrmat(corrmat == 0) = NaN;
 %% XS
 ptfret_xs = {}; stats_xs = {};
-[ptfret_xs{end+1}, stats_xs{end+1}] = estimateXSmom(specs.NINE_TO_NOON, specs.LAST_E,       mst,price_fl,reton,dates,OPT_,false);
-[ptfret_xs{end+1}, stats_xs{end+1}] = estimateXSmom(specs.NINE_TO_NOON, specs.LAST_V,       mst,price_fl,reton,dates,OPT_,false);
+[ptfret_xs{end+1}, stats_xs{end+1}] = estimateXSmom(specs.NINE_TO_NOON, specs.LAST_E,       data,dates,OPT_,false);
+[ptfret_xs{end+1}, stats_xs{end+1}] = estimateXSmom(specs.NINE_TO_NOON, specs.LAST_V,       data,dates,OPT_,false);
 % % These are similar to NINE_TO_NOON
-% [ptfret_xs{end+1}, stats_xs{end+1}] = estimateXSmom(specs.TEN_TO_ONE  , specs.LAST_E,       mst,price_fl,reton,dates,OPT_,true);
-% [ptfret_xs{end+1}, stats_xs{end+1}] = estimateXSmom(specs.FIRST       , specs.LAST_E,       mst,price_fl,reton,dates,OPT_,true);
+% [ptfret_xs{end+1}, stats_xs{end+1}] = estimateXSmom(specs.TEN_TO_ONE  , specs.LAST_E,       data,dates,OPT_,true);
+% [ptfret_xs{end+1}, stats_xs{end+1}] = estimateXSmom(specs.FIRST       , specs.LAST_E,       data,dates,OPT_,true);
 
-[ptfret_xs{end+1}, stats_xs{end+1}] = estimateXSmom(specs.NINE_TO_ONE , specs.AFTERNOON_E, 	mst,price_fl,reton,dates,OPT_,true);
-[ptfret_xs{end+1}, stats_xs{end+1}] = estimateXSmom(specs.NINE_TO_ONE , specs.AFTERNOON_V,  mst,price_fl,reton,dates,OPT_,false);
+[ptfret_xs{end+1}, stats_xs{end+1}] = estimateXSmom(specs.NINE_TO_ONE , specs.AFTERNOON_E, 	data,dates,OPT_,true);
+[ptfret_xs{end+1}, stats_xs{end+1}] = estimateXSmom(specs.NINE_TO_ONE , specs.AFTERNOON_V,  data,dates,OPT_,false);
 
 % % Similar to NINE_TO_ONE predicting AFTERNOON
-% [ptfret_xs{end+1}, stats_xs{end+1}] = estimateXSmom(specs.NINE_TO_ONE , specs.SLAST_E,      mst,price_fl,reton,dates,OPT_,true);
-% [ptfret_xs{end+1}, stats_xs{end+1}] = estimateXSmom(specs.TEN_TO_ONE  , specs.SLAST_E,      mst,price_fl,reton,dates,OPT_,true);
+% [ptfret_xs{end+1}, stats_xs{end+1}] = estimateXSmom(specs.NINE_TO_ONE , specs.SLAST_E,      data,dates,OPT_,true);
+% [ptfret_xs{end+1}, stats_xs{end+1}] = estimateXSmom(specs.TEN_TO_ONE  , specs.SLAST_E,      data,dates,OPT_,true);
 
 % corrmat = tril(corr(cell2mat(cellfun(@(x) x{:,end}, ptfret_xs,'un',0)),'rows','pairwise'),-1);
 % corrmat(corrmat == 0) = NaN;

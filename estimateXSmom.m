@@ -1,9 +1,9 @@
-function [ptfret, stats, signal, hpr, lvl, dt, h] = estimateXSmom(spec_sig, spec_hpr, mst, price_fl, reton, dates, OPT_, doplot)
-signal = getIntradayRet(spec_sig, mst, price_fl, OPT_.DATAPATH);
-hpr    = getIntradayRet(spec_hpr, mst, price_fl, OPT_.DATAPATH)*100;
+function [ptfret, stats, signal, hpr, lvl, dt, h] = estimateXSmom(spec_sig, spec_hpr, data, dates, OPT_, doplot)
+signal = getIntradayRet(spec_sig, data.mst, data.price_fl, OPT_.DATAPATH);
+hpr    = getIntradayRet(spec_hpr, data.mst, data.price_fl, OPT_.DATAPATH)*100;
 
 if OPT_.RET_USE_OVERNIGHT
-    signal = (1+signal) .* (1 + reton) - 1;
+    signal = (1+signal) .* (1 + data.reton) - 1;
 end
 
 [ptfret, ~, ~, avg_sig] = portfolio_sort(hpr, signal,'PortfolioNumber',OPT_.NUM_PTF_UNI);
