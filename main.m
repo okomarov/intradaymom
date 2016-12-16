@@ -148,8 +148,9 @@ ptfret_xs = {}; stats_xs = {};
 
 % corrmat = tril(corr(cell2mat(cellfun(@(x) x{:,end}, ptfret_xs,'un',0)),'rows','pairwise'),-1);
 % corrmat(corrmat == 0) = NaN;
-%% Plot
-lvl.univariate_last = plot_cumret(results.dates, results.ptfret.univariate{:,:}./100, 1, true);
+%% Double sorts
+tb = estimateSorts(specs.NINE_TO_NOON, specs.LAST_E     , data, dates);
+tb = estimateSorts(specs.NINE_TO_ONE , specs.AFTERNOON_E, data, dates);
 
 
 plot_cumret(results.dates, results.ptfret.xs{:,:}./100, 1, true);
