@@ -12,7 +12,6 @@ OPT_.DATE_RANGE = [];
 OPT_.VOL_AVG    = 'e';
 OPT_.VOL_LAG    = 60;
 OPT_.VOL_SHIFT  = OPT_.VOL_LAG - 1 + OPT_.DAY_LAG;
-OPT_.VOL_TARGET = 0.4;
 
 OPT_.REGRESSION_LONG_MINOBS = 10;
 OPT_.REGRESSION_LONG_ALPHA  = 0.05;
@@ -20,6 +19,8 @@ OPT_.REGRESSION_LONG_ALPHA  = 0.05;
 try
     load data_snapshot.mat
 catch
+    myunstack = @(tb,vname) sortrows(unstack(tb(:,{'Permno','Date',vname}),vname,'Permno'),'Date');
+
     % Index data
     mst = loadresults('master');
 
@@ -40,10 +41,9 @@ catch
     dates   = unique(mst.Date);
 
     % Market cap
-    cap       = getMktCap(mst,OPT_.DAY_LAG);
-    myunstack = @(tb,vname) sortrows(unstack(tb(:,{'Permno','Date',vname}),vname,'Permno'),'Date');
-    cap       = myunstack(cap,'Cap');
-    cap       = log(double(cap{:,2:end}));
+    cap = getMktCap(mst,OPT_.DAY_LAG);
+    cap = myunstack(cap,'Cap');
+    cap = log(double(cap{:,2:end}));
 
     % Overnight
     reton          = loadresults('return_intraday_overnight','..\hfandlow\results');
@@ -65,11 +65,13 @@ catch
     % Moving average of rskew
     skew      = loadresults('rskew');
     idx       = ismembIdDate(skew.Permno, skew.Date, mst.Permno, mst.Date);
-    skew      = skew(idx,:);
+    skew      = skew(idx & ~isnan(skew.Skew),:);
     skew.Skew = tsmovavg(skew.Skew,OPT_.VOL_AVG, OPT_.VOL_LAG,1);
     skew      = lagpanel(skew,'Permno',OPT_.VOL_SHIFT);
+    [~,col]   = ismember(unique(skew.Permno),permnos);
     skew      = myunstack(skew,'Skew');
     skew      = skew{:,2:end};
+    skew(:,col) = skew;
     
     % Illiquidity
     amihud         = loadresults('illiq');
