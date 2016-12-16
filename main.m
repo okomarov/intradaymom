@@ -62,6 +62,15 @@ catch
     vol            = myunstack(vol,'Sigma');
     vol            = sqrt(252) * vol{:,2:end};
 
+    % Moving average of rskew
+    skew      = loadresults('rskew');
+    idx       = ismembIdDate(skew.Permno, skew.Date, mst.Permno, mst.Date);
+    skew      = skew(idx,:);
+    skew.Skew = tsmovavg(skew.Skew,OPT_.VOL_AVG, OPT_.VOL_LAG,1);
+    skew      = lagpanel(skew,'Permno',OPT_.VOL_SHIFT);
+    skew      = myunstack(skew,'Skew');
+    skew      = skew{:,2:end};
+    
     % Illiquidity
     amihud         = loadresults('illiq');
     idx            = ismember(amihud.permnos, permnos);
@@ -104,18 +113,19 @@ catch
     data.reton    = reton;
     data.tick     = tick;
     data.vol      = vol;
-    data.volume = volume;
+    data.skew     = skew;
+    data.volume   = volume;
     data.industry = industry;
-    data.amihud = amihud;
+    data.amihud   = amihud;
 
     save data_snapshot.mat data dates permnos OPT_ -v7.3
 end
 %% Correlations characteristics
-names   = {'size','illiq','tick','vol','volume'};
-corrmat = corrxs(cat(3, data.cap, data.amihud, data.tick, data.vol, data.volume), names);
+names   = {'size','illiq','tick','vol','skew','volume'};
+corrmat = corrxs(cat(3, data.cap, data.amihud, data.tick, data.vol, data.skew,data.volume), names);
 
 %% TSMOM
-ptfret_ts = {}; stats_ts = {};
+ptfret_ts                           = {}; stats_ts = {};
 [ptfret_ts{end+1}, stats_ts{end+1}] = estimateTSmom(specs.NINE_TO_NOON, specs.LAST_E,       data,dates,OPT_,false);
 [ptfret_ts{end+1}, stats_ts{end+1}] = estimateTSmom(specs.NINE_TO_NOON, specs.LAST_V,       data,dates,OPT_,false);
 % % These are similar to NINE_TO_NOON
@@ -132,7 +142,7 @@ ptfret_ts = {}; stats_ts = {};
 % corrmat = tril(corr(cell2mat(cellfun(@(x) x.ew_fun, ptfret_ts,'un',0)),'rows','pairwise'),-1);
 % corrmat(corrmat == 0) = NaN;
 %% XS
-ptfret_xs = {}; stats_xs = {};
+ptfret_xs                           = {}; stats_xs = {};
 [ptfret_xs{end+1}, stats_xs{end+1}] = estimateXSmom(specs.NINE_TO_NOON, specs.LAST_E,       data,dates,OPT_,false);
 [ptfret_xs{end+1}, stats_xs{end+1}] = estimateXSmom(specs.NINE_TO_NOON, specs.LAST_V,       data,dates,OPT_,false);
 % % These are similar to NINE_TO_NOON
@@ -149,15 +159,9 @@ ptfret_xs = {}; stats_xs = {};
 % corrmat = tril(corr(cell2mat(cellfun(@(x) x{:,end}, ptfret_xs,'un',0)),'rows','pairwise'),-1);
 % corrmat(corrmat == 0) = NaN;
 %% Double sorts
-tb = estimateSorts(specs.NINE_TO_NOON, specs.LAST_E     , data, dates);
-tb = estimateSorts(specs.NINE_TO_ONE , specs.AFTERNOON_E, data, dates);
+a = estimateSorts(specs.NINE_TO_NOON, specs.LAST_E     , data, dates);
+b = estimateSorts(specs.NINE_TO_ONE , specs.AFTERNOON_E, data, dates);
 
-
-plot_cumret(results.dates, results.ptfret.xs{:,:}./100, 1, true);
-
-results.lvl_size  = plot_cumret(results.dates, results.ptfret_size , 20, true);
-results.lvl_illiq = plot_cumret(results.dates, results.ptfret_illiq, 20, true);
-results.lvl_tick  = plot_cumret(results.dates, results.ptfret_tick ,  1, true);
 %% Regress on long-only
 results = regressOnLongOnly(results, OPT_.REGRESSION_LONG_MINOBS, OPT_.REGRESSION_LONG_ALPHA);
 

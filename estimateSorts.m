@@ -12,6 +12,9 @@ out = formatOut(out,'Size',fun, ptfret, count,avg_sig,N);
 [ptfret, ~, count, avg_sig] = portfolio_sort(hpr, {data.vol, signal},'PortfolioNumber',N);
 out = formatOut(out,'Volatility',fun, ptfret, count,avg_sig,N);
 
+[ptfret, ~, count, avg_sig] = portfolio_sort(hpr, {data.vol, signal},'PortfolioNumber',N);
+out = formatOut(out,'Skewness',fun, ptfret, count,avg_sig,N);
+
 [ptfret, ~, count, avg_sig] = portfolio_sort(hpr, {data.volume, signal},'PortfolioNumber',N);
 out = formatOut(out,'Volume',fun, ptfret, count, avg_sig, N);
 

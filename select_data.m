@@ -78,11 +78,16 @@ tick.Ratio = price;
 % Volatility
 rv      = loadresults('rvcomponents5m','..\results');
 [~,pos] = ismembIdDate(master.Permno, master.Date, rv.Permno, rv.Date);
-rv      = rv(pos,{'Permno','Date','RV'});
+rv      = rv(pos,:);
 
-% FF49 industry classification
-ff49 = getFF49IndustryCodes(master,0);
-ff49 = ff49(:,{'Permno','Date','FFid'});
+% Realized skewness
+rskew   = loadresults('rskew_comp','..\results');
+[~,pos] = ismembIdDate(master.Permno, master.Date, rskew.Permno, rskew.Date);
+rskew   = rskew(pos,:);
+rskew.Skew = sqrt(double(rv.N)) .* rskew.R3./rv.RV.^1.5;
+
+rv      = rv(:,{'Permno','Date','RV'});
+rskew   = rskew(:,{'Permno','Date','Skew'});
 
 % Add back mkt
 master = [master; mkt];
@@ -94,7 +99,7 @@ save('results\dsfquery.mat','dsf')
 save('results\illiq.mat', 's')
 save('results\tick.mat', 'tick')
 save('results\rv5.mat', 'rv')
-save('results\ff49.mat', 'ff49')
+save('results\rskew.mat', 'rskew')
 %% Half hour returns
 clearvars -except master price_fl
 [idx,pos]                = ismembIdDate(master.Permno, master.Date, price_fl.Permno, price_fl.Date);
