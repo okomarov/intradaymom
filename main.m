@@ -8,6 +8,7 @@ OPT_.NUM_PTF_UNI = 10;
 
 OPT_.DATE_RANGE = [];
 % OPT_.DATE_RANGE = [-inf, 20010431];
+% OPT_.DATE_RANGE = [20010501, inf];
 
 OPT_.VOL_AVG    = 'e';
 OPT_.VOL_LAG    = 60;
@@ -145,7 +146,7 @@ ptfret_ts                           = {}; stats_ts = {};
 % corrmat(corrmat == 0) = NaN;
 %% XS
 ptfret_xs                           = {}; stats_xs = {};
-[ptfret_xs{end+1}, stats_xs{end+1}] = estimateXSmom(specs.NINE_TO_NOON, specs.LAST_E,       data,dates,OPT_,false);
+[ptfret_xs{end+1}, stats_xs{end+1}] = estimateXSmom(specs.NINE_TO_NOON, specs.LAST_E,       data,dates,OPT_,true);
 [ptfret_xs{end+1}, stats_xs{end+1}] = estimateXSmom(specs.NINE_TO_NOON, specs.LAST_V,       data,dates,OPT_,false);
 % % These are similar to NINE_TO_NOON
 % [ptfret_xs{end+1}, stats_xs{end+1}] = estimateXSmom(specs.TEN_TO_ONE  , specs.LAST_E,       data,dates,OPT_,true);
@@ -161,8 +162,8 @@ ptfret_xs                           = {}; stats_xs = {};
 % corrmat = tril(corr(cell2mat(cellfun(@(x) x{:,end}, ptfret_xs,'un',0)),'rows','pairwise'),-1);
 % corrmat(corrmat == 0) = NaN;
 %% Double sorts
-a = estimateSorts(specs.NINE_TO_NOON, specs.LAST_E     , data, dates);
-b = estimateSorts(specs.NINE_TO_ONE , specs.AFTERNOON_E, data, dates);
+a = estimateSorts(specs.NINE_TO_NOON, specs.LAST_E     , data, dates, OPT_);
+b = estimateSorts(specs.NINE_TO_ONE , specs.AFTERNOON_E, data, dates, OPT_);
 
 %% Regress on long-only
 results = regressOnLongOnly(results, OPT_.REGRESSION_LONG_MINOBS, OPT_.REGRESSION_LONG_ALPHA);
@@ -170,18 +171,13 @@ results = regressOnLongOnly(results, OPT_.REGRESSION_LONG_MINOBS, OPT_.REGRESSIO
 %% RA factors
 factors = loadresults('RAfactors');
 
-[~,ia,ib] = intersect(results.dates, factors.Date);
-ptfret_e  = ptfret_e(ia);
-ptfret_w  = ptfret_w(ia);
+[~,ia,ib] = intersect(dates, factors.Date);
+ptfret    = ptfret_xs{2}(ia,:);
 factors   = factors(ib,:);
-n         = size(ptfret_e,1);
+n         = size(ptfret,1);
 opts      = {'intercept',false,'display','off','type','HAC','bandwidth',floor(4*(n/100)^(2/9))+1,'weights','BT'};
 f         = @(x,y)  hac(x, y, opts{:});
 
-[~,se,coeff] = f([ones(n,1), factors{:,[2:6,8:9]}*100], ptfret_e*100);
-tratio       = coeff./se;
-pval         = 2 * normcdf(-abs(tratio));
-
-[~,se,coeff] = f([ones(n,1), factors{:,[2:6,8:9]}*100], ptfret_w*100);
+[~,se,coeff] = f([ones(n-1999,1), factors{2000:end,[2,9]}*100], ptfret{2000:end,end});
 tratio       = coeff./se;
 pval         = 2 * normcdf(-abs(tratio));
