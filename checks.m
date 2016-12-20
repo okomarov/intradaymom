@@ -2,10 +2,10 @@
 try
     load('results\avg_hh_ret.mat')
 catch
-    OPT_RANGES   = [930, 1000, 1030, 1100, 1130, 1200, 1230, 1300, 1330, 1400, 1430, 1500, 1530]'*100;
-    OPT_LAGDAY   = 1;
-    NSERIES      = 8924;
-    NDATES       = 4338;
+    OPT_RANGES = [930, 1000, 1030, 1100, 1130, 1200, 1230, 1300, 1330, 1400, 1430, 1500, 1530]'*100;
+    OPT_LAGDAY = 1;
+    NSERIES    = 8924;
+    NDATES     = 4338;
 
     price_fl = loadresults('price_fl');
     idx      = isMicrocap(price_fl, 'LastPrice',OPT_LAGDAY);
@@ -58,29 +58,34 @@ print('avgdev','-depsc','-r200','-loose')
 
 % Plot time-evolution
 figure
-set(gcf, 'Position', get(gcf,'Position').*[1,1,1,0.72],'PaperPositionMode','auto')
+set(gcf, 'Position', get(gcf,'Position').*[1,1,1,0.62],'PaperPositionMode','auto')
 dt             = yyyymmdd2datetime(und);
 [unyear,pos,g] = unique(year(dt),'last');
 yret           = splitapply(@(x) prod(1+x)-1, avg_xs, g);
-h = ribbon(yret);
-set(h, {'CData'}, get(h,'ZData'), 'FaceColor','interp','MeshStyle','column')
+h              = ribbon(yret*100);
+set(h, {'CData'}, get(h,'ZData'), 'FaceColor','interp','LineStyle','none')
 set(gca,'TickLabelInterpreter','latex','Layer','Top',...
     'Box','on','XGrid','off','YGrid','off','ZGrid','off',...
     'XTick',1:nranges, 'XTickLabel',labels,...
     'YDir','reverse','Ylim',[1,numel(unyear)],'YTick',2:4:numel(unyear),'YTickLabel',unyear(2:4:end),...
-    'Zlim',[-0.3,0.3])
+    'Zlim',[-30,30])
 view(0,90)
 colorbar('TickLabelInterpreter','latex')
-print('avg_time','-depsc','-r200','-loose')
+ca             = caxis();
+hold on
+bar(repmat(18,1,13),'FaceColor','none','BarWidth',0.75)
+caxis(ca);
+matlab2tikz('avg_time.tex','StrictFontSize',true)
+% print('avg_time','-depsc','-r200','-loose')
 %% Volume: average and std
 try
     load('results\avg_hh_volume.mat')
 catch
 
-    OPT_RANGES   = [930, 1000, 1030, 1100, 1130, 1200, 1230, 1300, 1330, 1400, 1430, 1500, 1530]'*100;
-    OPT_LAGDAY   = 1;
-    NSERIES      = 8924;
-    NDATES       = 4338;
+    OPT_RANGES = [930, 1000, 1030, 1100, 1130, 1200, 1230, 1300, 1330, 1400, 1430, 1500, 1530]'*100;
+    OPT_LAGDAY = 1;
+    NSERIES    = 8924;
+    NDATES     = 4338;
 
     price_fl = loadresults('price_fl');
     idx      = isMicrocap(price_fl, 'LastPrice',OPT_LAGDAY);
@@ -137,7 +142,7 @@ set(gcf, 'Position', get(gcf,'Position').*[1,1,1,0.72],'PaperPositionMode','auto
 dt             = yyyymmdd2datetime(und);
 [unyear,pos,g] = unique(year(dt),'last');
 yret           = splitapply(@mean, avg_xs, g);
-h = ribbon(yret);
+h              = ribbon(yret);
 set(h, {'CData'}, get(h,'ZData'), 'FaceColor','interp','MeshStyle','column')
 set(gca,'TickLabelInterpreter','latex','Layer','Top',...
     'Box','on','XGrid','off','YGrid','off','ZGrid','off',...
@@ -159,18 +164,18 @@ rets     = makeTsmom(getIntradayRet(specs(1),specs(2)), getIntradayRet(specs(3),
 figure
 % Strategy
 set(gcf, 'Position', get(gcf,'Position').*[1,1,1,0.40],'PaperPositionMode','auto')
-[lvl,dt] = plot_cumret(results.dates,rets,1,1);
+[lvl,dt]   = plot_cumret(results.dates,rets,1,1);
 legend off, title ''
 % Recession patches
-YLIM = [1,10];
-XLIM = xlim();
+YLIM       = [1,10];
+XLIM       = xlim();
 recessions = [730925,731170; 733391,733939];
 X          = recessions-datenum(XLIM(1));
 h          = patch(X(:,[1,1,2,2])', repmat([YLIM fliplr(YLIM)]',1,2),[0.9,0.9,0.9],'EdgeColor','none');
 uistack(h,'bottom')
 % Markers
 hold on
-mrkStep = 15;
+mrkStep    = 15;
 set(gca,'ColorOrderIndex',1)
 plot(dt(1:mrkStep:end),lvl(1:mrkStep:end,1),'x',...
      dt(1:mrkStep:end),lvl(1:mrkStep:end,2),'o',...
@@ -192,18 +197,18 @@ rets     = makeTsmom(getIntradayRet(specs(1),specs(2)), getIntradayRet(specs(3),
 figure
 % Strategy
 set(gcf, 'Position', get(gcf,'Position').*[1,1,1,0.40],'PaperPositionMode','auto')
-[lvl,dt] = plot_cumret(results.dates,rets,1,1);
+[lvl,dt]   = plot_cumret(results.dates,rets,1,1);
 legend off, title ''
 % Recession patches
-YLIM = [0.08,15];
-XLIM = xlim();
+YLIM       = [0.08,15];
+XLIM       = xlim();
 recessions = [730925,731170; 733391,733939];
 X          = recessions-datenum(XLIM(1));
 h          = patch(X(:,[1,1,2,2])', repmat([YLIM fliplr(YLIM)]',1,2),[0.9,0.9,0.9],'EdgeColor','none');
 uistack(h,'bottom')
 % Markers
 hold on
-mrkStep = 15;
+mrkStep    = 15;
 set(gca,'ColorOrderIndex',1)
 plot(dt(1:mrkStep:end),lvl(1:mrkStep:end,1),'x',...
      dt(1:mrkStep:end),lvl(1:mrkStep:end,2),'o',...
