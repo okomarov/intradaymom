@@ -10,9 +10,9 @@ OPT_.DATE_RANGE = [];
 % OPT_.DATE_RANGE = [-inf, 20010431];
 % OPT_.DATE_RANGE = [20010501, inf];
 
-OPT_.VOL_AVG    = 'e';
-OPT_.VOL_LAG    = 60;
-OPT_.VOL_SHIFT  = OPT_.VOL_LAG - 1 + OPT_.DAY_LAG;
+OPT_.VOL_AVG   = 'e';
+OPT_.VOL_LAG   = 60;
+OPT_.VOL_SHIFT = OPT_.VOL_LAG - 1 + OPT_.DAY_LAG;
 
 OPT_.REGRESSION_LONG_MINOBS = 10;
 OPT_.REGRESSION_LONG_ALPHA  = 0.05;
@@ -64,14 +64,14 @@ catch
     vol            = sqrt(252) * vol{:,2:end};
 
     % Moving average of rskew
-    skew      = loadresults('rskew');
-    idx       = ismembIdDate(skew.Permno, skew.Date, mst.Permno, mst.Date);
-    skew      = skew(idx & ~isnan(skew.Skew),:);
-    skew.Skew = tsmovavg(skew.Skew,OPT_.VOL_AVG, OPT_.VOL_LAG,1);
-    skew      = lagpanel(skew,'Permno',OPT_.VOL_SHIFT);
-    [~,col]   = ismember(unique(skew.Permno),permnos);
-    skew      = myunstack(skew,'Skew');
-    skew      = skew{:,2:end};
+    skew        = loadresults('rskew');
+    idx         = ismembIdDate(skew.Permno, skew.Date, mst.Permno, mst.Date);
+    skew        = skew(idx & ~isnan(skew.Skew),:);
+    skew.Skew   = tsmovavg(skew.Skew,OPT_.VOL_AVG, OPT_.VOL_LAG,1);
+    skew        = lagpanel(skew,'Permno',OPT_.VOL_SHIFT);
+    [~,col]     = ismember(unique(skew.Permno),permnos);
+    skew        = myunstack(skew,'Skew');
+    skew        = skew{:,2:end};
     skew(:,col) = skew;
     
     % Illiquidity
@@ -109,6 +109,12 @@ catch
     industry = myunstack(industry,'FFid');
     industry = industry{:,2:end};
 
+    % SP500 members
+    issp     = mst(:,{'Permno','Date'});
+    issp.Val = issp500member(mst);
+    issp     = myunstack(issp,'Val');
+    issp     = issp{:,2:end};
+
     % Reorganize into one data structure
     data.mst      = mst;
     data.price_fl = price_fl;
@@ -120,6 +126,7 @@ catch
     data.volume   = volume;
     data.industry = industry;
     data.amihud   = amihud;
+    data.issp     = issp;
 
     save data_snapshot.mat data dates permnos OPT_ -v7.3
 end
