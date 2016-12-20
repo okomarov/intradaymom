@@ -1,6 +1,6 @@
 function [lvl,dt,h] = plot_cumret(dates, ret, nlag, to_monthly)
 
-REQUIREALL = true;
+REQUIREALL = false;
 
 if istable(ret)
     vnames = ret.Properties.VariableNames;
