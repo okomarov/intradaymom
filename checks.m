@@ -1,3 +1,8 @@
+%% Number of series
+ret = getIntradayRet(specs.LAST_E);
+nnz(~all(isnan(ret)))
+mean(sum(~isnan(ret),2))
+
 %% Ret: average and std
 try
     load('results\avg_hh_ret.mat')
