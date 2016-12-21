@@ -238,48 +238,48 @@ plot(dt(1:mrkStep:end),lvl(1:mrkStep:end,1),'x',...
 set(gca, 'TickLabelInterpreter','latex','Layer','Top',...
     'YScale','log','YLim',YLIM,'YTick',[0.35,1,5,10])
 print('tsmom_afternoon','-depsc','-r200','-loose')
-%% Signal and HPR
-% Signal and HPR #1: last half hour
-specs(1) = struct('hhmm', 930,'type','exact');
-specs(2) = struct('hhmm',1200,'type','exact');
-specs(3) = struct('hhmm',1530,'type','exact');
-specs(4) = struct('hhmm',1600,'type','exact');
-% Signal and HPR #2: 13:30 to 15:30
-specs(1) = struct('hhmm', 930,'type','exact');
-specs(2) = struct('hhmm',1300,'type','exact');
-specs(3) = struct('hhmm',1330,'type','exact');
-specs(4) = struct('hhmm',1530,'type','exact');
-% Signal and HPR #3: 13:30 to 15:30
-specs(1) = struct('hhmm', 930,'type','vwap','duration',30);
-specs(2) = struct('hhmm',1200,'type','vwap','duration',30);
-specs(3) = struct('hhmm',1230,'type','vwap','duration',30);
-specs(4) = struct('hhmm',1530,'type','vwap','duration',30);
-% Signal and HPR #4: last half hour vwap
-specs(1) = struct('hhmm', 930,'type','exact','duration',0);
-specs(2) = struct('hhmm',1200,'type','exact','duration',0);
-specs(3) = struct('hhmm',1525,'type','vwap' ,'duration',5);
-specs(4) = struct('hhmm',1555,'type','vwap' ,'duration',5);
-% Signal and HPR #5: 13:30 to 15:30 vwap
-specs(1) = struct('hhmm', 930,'type','exact','duration',0);
-specs(2) = struct('hhmm',1300,'type','exact','duration',0);
-specs(3) = struct('hhmm',1330,'type','vwap' ,'duration',5);
-specs(4) = struct('hhmm',1525,'type','vwap' ,'duration',5);
 %% Signal prediction rate
 load dates
-results.signal = getIntradayRet(specs(1),specs(2));
-results.hpr    = getIntradayRet(specs(3),specs(4));
 
-% Correctly predicted and long positions
-total   = sum(~isnan(results.signal),2);
-correct = sum(sign(results.signal) == sign(results.hpr),2);
-long    = sum(results.signal > 0,2);
+signal = getIntradayRet(specs.NINE_TO_NOON);
+hpr    = getIntradayRet(specs.LAST_E);
 
-% subplot(211)
-plot(yyyymmdd2datetime(results.dates), movmean([correct,long]./total,[252,0])*100)
+total     = sum(~isnan(signal),2);
+sign_sig  = sign(signal);
+sign_hpr  = sign(hpr);
+correct   = sum(sign_sig == 1 & sign_hpr == 1,2) + sum(sign_sig == -1 & sign_hpr == -1,2);
+null      = sum(sign_sig == 0,2);
+long_only = sum(sign_hpr == 1,2);
+
+mean(correct./(total-null)); % 0.44
+idx = dates > 20010431;
+mean(correct(idx)./(total(idx)-null(idx))); % 0.49
+
+subplot(211)
+plot(yyyymmdd2datetime(dates), movmean([correct+null,long_only]./total,[252,0])*100)
 title '252-day moving averages'
 legend 'correctly predicted' 'long positions'
 ytickformat('percentage')
 
+signal = getIntradayRet(specs.NINE_TO_ONE);
+hpr    = getIntradayRet(specs.AFTERNOON_E);
+
+% Correctly predicted and long positions
+total     = sum(~isnan(signal),2);
+sign_sig  = sign(signal);
+sign_hpr  = sign(hpr);
+correct   = sum(sign_sig == 1 & sign_hpr == 1,2) + sum(sign_sig == -1 & sign_hpr == -1,2);
+null      = sum(sign_sig == 0,2);
+long_only = sum(sign_hpr == 1,2);
+
+mean(correct./(total-null)); % 0.44
+idx = dates > 20010431;
+mean(correct(idx)./(total(idx)-null(idx))); % 0.49
+
+subplot(212)
+plot(yyyymmdd2datetime(dates), movmean([correct+null,long_only]./total,[252,0])*100)
+legend 'correctly predicted' 'long positions'
+ytickformat('percentage')
 %% Check Open/Close in TAQ vs CRSP
 OPT_NOMICRO            = true;
 OPT_OUTLIERS_THRESHOLD = 1;
