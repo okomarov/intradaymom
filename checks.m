@@ -39,26 +39,42 @@ catch
     end
     % avg(count < 10) = NaN;
     % dev(count < 10) = NaN;
-    labels = arrayfun(@(h,m) sprintf('%d:%02d\n', h,m), fix(OPT_RANGES/10000), fix(mod(OPT_RANGES/100,100)),'un',0);
+
+    % Overnight
+    tmp     = loadresults('return_intraday_overnight','..\hfandlow\results');
+    idx     = ismembIdDate(tmp.Permno, tmp.Date, price_fl.Permno, price_fl.Date);
+    tmp     = tmp(idx,:);
+    [~,~,g] = unique(tmp.Permno);
+    avg_ts  = [grpstats(tmp.RetCO,g,'mean') avg_ts];
+    dev_ts  = [grpstats(tmp.RetCO,g,'std')  dev_ts];
+    [~,~,g] = unique(tmp.Date);
+    avg_xs  = [grpstats(tmp.RetCO,g,'mean') avg_xs];
+    dev_xs  = [grpstats(tmp.RetCO,g,'std')  dev_xs];
+
+    labels = ['R\textsuperscript{on}'; arrayfun(@(h,m) sprintf('%d:%02d\n', h,m), fix(OPT_RANGES/10000), fix(mod(OPT_RANGES/100,100)),'un',0)];
     save results\avg_hh_ret.mat avg_* dev_* labels nranges und
 end
 
 % Plot overall averages
 figure
 set(gcf, 'Position', get(gcf,'Position').*[1,1,1,0.4],'PaperPositionMode','auto')
+XLIM = [0, nranges+2];
 favg = @(p) prctile(avg_ts,p,1)*252*100;
-errorbar(1:nranges,favg(50),favg(25)-favg(50),favg(75)-favg(50),'x','MarkerEdgeCOlor','r','LineWidth',0.75);
+errorbar(1:nranges+1,favg(50),favg(25)-favg(50),favg(75)-favg(50),'x','MarkerEdgeCOlor','r','LineWidth',0.75);
+hold on
+h = plot(XLIM, [0,0],'Color',[0.85,0.85,0.85]);
+uistack(h,'bottom');
 set(gca, 'TickLabelInterpreter','latex','Layer','Top',...
-    'YTick',-50:25:50,'Ylim',[-50,50],'XTick',1:nranges, 'XTickLabel',labels(1:2:end,:))
+    'YTick',-50:50:100,'Ylim',[-55,85],'XTick',1:nranges+1, 'XTickLabel',labels([1,2:2:end],:),'Xlim',XLIM)
 print('avgret','-depsc','-r200','-loose')
 
 % Plot overall deviations
 figure
 set(gcf, 'Position', get(gcf,'Position').*[1,1,1,0.4],'PaperPositionMode','auto')
 fdev = @(p) prctile(dev_ts,p,1)*sqrt(252)*100;
-errorbar(1:nranges,fdev(50),fdev(25)-fdev(50),fdev(75)-fdev(50),'x','MarkerEdgeCOlor','r','LineWidth',0.75);
+errorbar(1:nranges+1,fdev(50),fdev(25)-fdev(50),fdev(75)-fdev(50),'x','MarkerEdgeCOlor','r','LineWidth',0.75);
 set(gca, 'TickLabelInterpreter','latex','Layer','Top',...
-    'Ylim',[0,40],'XTick',1:nranges, 'XTickLabel',labels)
+    'YTick',0:25:50, 'Ylim',[0,50],'XTick',1:nranges+1, 'XTickLabel',labels, 'Xlim',XLIM)
 print('avgdev','-depsc','-r200','-loose')
 
 % Plot time-evolution
