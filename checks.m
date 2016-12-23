@@ -79,24 +79,41 @@ print('avgdev','-depsc','-r200','-loose')
 
 % Plot time-evolution
 figure
-set(gcf, 'Position', get(gcf,'Position').*[1,1,1,0.62],'PaperPositionMode','auto')
+set(gcf, 'Position', get(gcf,'Position').*[1,1,1,0.4],'PaperPositionMode','auto')
 dt             = yyyymmdd2datetime(und);
 [unyear,pos,g] = unique(year(dt),'last');
-yret           = splitapply(@(x) prod(1+x)-1, avg_xs, g);
-h              = ribbon(yret*100);
+yret           = splitapply(@nanmean, avg_xs, g);
+h              = ribbon(yret*252*100);
 set(h, {'CData'}, get(h,'ZData'), 'FaceColor','interp','LineStyle','none')
+view(0,90)
 set(gca,'TickLabelInterpreter','latex','Layer','Top',...
     'Box','on','XGrid','off','YGrid','off','ZGrid','off',...
-    'XTick',1:nranges, 'XTickLabel',labels,...
-    'YDir','reverse','Ylim',[1,numel(unyear)],'YTick',2:4:numel(unyear),'YTickLabel',unyear(2:4:end),...
-    'Zlim',[-30,30])
-view(0,90)
-colorbar('TickLabelInterpreter','latex')
-ca             = caxis();
+    'XTick',1:nranges+1, 'XTickLabel',labels([1,2:2:end]),'Xlim',XLIM,...
+    'YDir','reverse','Ylim',[1,numel(unyear)],'YTick',2:4:numel(unyear),'YTickLabel',unyear(2:4:end))
+colorbar('TickLabelInterpreter','latex','Ticks',[-40:40:80])
 hold on
-bar(repmat(18,1,13),'FaceColor','none','BarWidth',0.75)
-caxis(ca);
+bar(repmat(18,1,nranges+1),'FaceColor','none','BarWidth',0.76)
+caxis([-40,80]);
+matlab2tikz('avg_time_reton.tex','StrictFontSize',true)
+
+% Time evolution without reton
+figure
+set(gcf, 'Position', get(gcf,'Position').*[1,1,1,0.4],'PaperPositionMode','auto')
+yret(:,1) = NaN;
+h              = ribbon(yret*252*100);
+set(h, {'CData'}, get(h,'ZData'), 'FaceColor','interp','LineStyle','none')
+view(0,90)
+set(gca,'TickLabelInterpreter','latex','Layer','Top',...
+    'Box','on','XGrid','off','YGrid','off','ZGrid','off',...
+    'XTick',1:nranges+1, 'XTickLabel',labels([1,2:2:end]),'Xlim',XLIM,...
+    'YDir','reverse','Ylim',[1,numel(unyear)],'YTick',2:4:numel(unyear),'YTickLabel',unyear(2:4:end))
+colorbar('TickLabelInterpreter','latex')
+ca = caxis();
+hold on
+bar([NaN repmat(18,1,nranges)],'FaceColor','none','BarWidth',0.76)
+caxis([-35 35]);
 matlab2tikz('avg_time.tex','StrictFontSize',true)
+
 % print('avg_time','-depsc','-r200','-loose')
 %% Volume: average and std
 try
