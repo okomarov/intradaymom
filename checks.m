@@ -189,56 +189,49 @@ set(gca,'TickLabelInterpreter','latex','Layer','Top',...
 view(25,30)
 print('avg_vol_time','-depsc','-r200','-loose')
 %% Stategy plots
-load data_snapshot.mat
+load dates.mat
 
-% Signal and HPR #4: last half hour vwap
-clear specs
-specs(1) = struct('hhmm', 930,'type','exact','duration',0);
-specs(2) = struct('hhmm',1200,'type','exact','duration',0);
-specs(3) = struct('hhmm',1525,'type','vwap' ,'duration',5);
-specs(4) = struct('hhmm',1555,'type','vwap' ,'duration',5);
-rets     = makeTsmom(getIntradayRet(specs(1),specs(2)), getIntradayRet(specs(3),specs(4)), @(win,los) win-los);
+% LAST
+rets = makeTsmom(getIntradayRet(specs.NINE_TO_NOON), getIntradayRet(specs.LAST_E));
 
 figure
-% Strategy
 set(gcf, 'Position', get(gcf,'Position').*[1,1,1,0.40],'PaperPositionMode','auto')
-[lvl,dt]   = plot_cumret(results.dates,rets,1,1);
+[lvl,dt,h] = plot_cumret(dates,rets,1,1);
+hl(4) = h(4);
 legend off, title ''
 % Recession patches
-YLIM       = [1,10];
+YLIM       = [0.95,25];
 XLIM       = xlim();
 recessions = [730925,731170; 733391,733939];
 X          = recessions-datenum(XLIM(1));
 h          = patch(X(:,[1,1,2,2])', repmat([YLIM fliplr(YLIM)]',1,2),[0.9,0.9,0.9],'EdgeColor','none');
-uistack(h,'bottom')
+uistack(h,'bottom')  
 % Markers
 hold on
 mrkStep    = 15;
 set(gca,'ColorOrderIndex',1)
-plot(dt(1:mrkStep:end),lvl(1:mrkStep:end,1),'x',...
-     dt(1:mrkStep:end),lvl(1:mrkStep:end,2),'o',...
-     dt(1:mrkStep:end),lvl(1:mrkStep:end,3),'^')
-
+hl(1:3) = plot(dt(1:mrkStep:end),lvl(1:mrkStep:end,1),'x',...
+               dt(1:mrkStep:end),lvl(1:mrkStep:end,2),'o',...
+               dt(1:mrkStep:end),lvl(1:mrkStep:end,3),'^');
 set(gca, 'TickLabelInterpreter','latex','Layer','Top',...
-    'YScale','log','YLim',YLIM,'YTick',[1,5,10])
+    'YScale','log','YLim',YLIM,'YTick',[1,5,10,20])
+
+[h,hi] = legend(hl,{'win','lose','WML','long'},'Box','off');
+set(h,'Location','northwest')
+set(hi(1:4),'Interpreter','latex')
+set(hi(5:2:11),'LineStyle','-')
 print('tsmom_last30','-depsc','-r200','-loose')
 
 
-% Signal and HPR #5: 13:30 to 15:30 vwap
-clear specs
-specs(1) = struct('hhmm', 930,'type','exact','duration',0);
-specs(2) = struct('hhmm',1300,'type','exact','duration',0);
-specs(3) = struct('hhmm',1330,'type','vwap' ,'duration',5);
-specs(4) = struct('hhmm',1525,'type','vwap' ,'duration',5);
-rets     = makeTsmom(getIntradayRet(specs(1),specs(2)), getIntradayRet(specs(3),specs(4)), @(win,los) los-win);
+% AFTERNOON
+rets = makeTsmom(getIntradayRet(specs.NINE_TO_ONE), getIntradayRet(specs.AFTERNOON_E));
 
 figure
-% Strategy
 set(gcf, 'Position', get(gcf,'Position').*[1,1,1,0.40],'PaperPositionMode','auto')
-[lvl,dt]   = plot_cumret(results.dates,rets,1,1);
+[lvl,dt]   = plot_cumret(dates,rets,1,1);
 legend off, title ''
 % Recession patches
-YLIM       = [0.08,15];
+YLIM       = [0.40,6];
 XLIM       = xlim();
 recessions = [730925,731170; 733391,733939];
 X          = recessions-datenum(XLIM(1));
@@ -253,7 +246,7 @@ plot(dt(1:mrkStep:end),lvl(1:mrkStep:end,1),'x',...
      dt(1:mrkStep:end),lvl(1:mrkStep:end,3),'^')
 
 set(gca, 'TickLabelInterpreter','latex','Layer','Top',...
-    'YScale','log','YLim',YLIM,'YTick',[0.35,1,5,10])
+    'YScale','log','YLim',YLIM,'YTick',[0.45,1,2,5])
 print('tsmom_afternoon','-depsc','-r200','-loose')
 %% Signal prediction rate
 load dates
