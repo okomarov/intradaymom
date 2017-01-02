@@ -1,4 +1,4 @@
-function [ptfret, avgsignal] = makeTsmom(signal, hpr, fun)
+function [ptfret, avgsignal] = makeTsmom(signal, hpr)
 ptfret = table();
 
 % Equal weighted
@@ -6,7 +6,7 @@ hpr_win       = apply_mask(signal, 1,hpr);
 hpr_los       = apply_mask(signal,-1,hpr);
 ptfret.ew_win = nanmean(hpr_win,2);
 ptfret.ew_los = nanmean(hpr_los,2);
-ptfret.ew_fun = fun(ptfret.ew_win, ptfret.ew_los);
+ptfret.ew_fun = ptfret.ew_win - ptfret.ew_los;
 
 % EW long-only
 ptfret.ew_long = ptfret.ew_win + ptfret.ew_los;

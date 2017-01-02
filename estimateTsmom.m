@@ -6,7 +6,7 @@ if OPT_.RET_USE_OVERNIGHT
     signal = (1+signal) .* (1 + data.reton) - 1;
 end
 
-[ptfret, avg_sig] = makeTsmom(signal, hpr, @(w,l) w-l);
+[ptfret, avg_sig] = makeTsmom(signal, hpr);
 
 stats = fstat(dates, ptfret, avg_sig)';
 
