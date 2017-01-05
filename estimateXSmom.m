@@ -8,8 +8,8 @@ end
 
 [ptfret, ~, ~, avg_sig] = portfolio_sort(hpr, signal,'PortfolioNumber',OPT_.NUM_PTF_UNI);
 
-ptfret = array2table([ptfret ptfret(:,1)+ptfret(:,end)]);
-stats  = fstat(dates, ptfret, avg_sig)';
+ptfret = array2table([ptfret nanmean(hpr,2)]);
+stats  = fstat(dates, ptfret, [avg_sig, nanmean(signal,2)])';
 
 if doplot
     [lvl,dt,h] = plot_cumret(dates, ptfret{:,:}./100, 1, true);
@@ -19,7 +19,7 @@ end
 end
 
 function stats = fstat(dt,ptfret,signal)
-signal = [nanmean(signal,1), NaN(1,size(ptfret,2) - size(signal,2))];
+signal = nanmean(signal,1);
 stats  = stratstats(dt, ptfret,'Frequency','d','IsPercentageReturn',true);
 stats  = [stats,  table(signal', 'VariableNames',{'Avgsig'})];
 end
