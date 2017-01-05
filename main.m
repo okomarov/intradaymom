@@ -86,12 +86,13 @@ catch
     amihud         = amihud.illiq;
 
     % Tick ratios
-    tick = loadresults('tick');
-    idx  = ismembIdDate(tick.Permno, tick.Date, mst.Permno, mst.Date);
-    tick = tick(idx,:);
-    tick = lagpanel(tick,'Permno',OPT_.DAY_LAG);
-    tick = myunstack(tick,'Ratio');
-    tick = tick{:,2:end};
+    tick       = loadresults('tick');
+    idx        = ismembIdDate(tick.Permno, tick.Date, mst.Permno, mst.Date);
+    tick       = tick(idx & ~isnan(tick.Ratio),:);
+    tick.Ratio = tsmovavg(tick.Ratio,OPT_.VOL_AVG, OPT_.VOL_LAG,1);
+    tick       = lagpanel(tick,'Permno',OPT_.VOL_SHIFT);
+    tick       = myunstack(tick,'Ratio');
+    tick       = tick{:,2:end};
 
     % Volume
     volume     = loadresults('volume');
@@ -133,7 +134,7 @@ end
 %% Correlations characteristics
 names   = {'size','illiq','tick','std','skew','volume'};
 corrmat = corrxs(cat(3, data.cap, data.amihud, data.tick, data.vol, data.skew,data.volume), names);
-order = {'size','volume','skew','illiq','tick','std'};
+order   = {'size','volume','skew','illiq','tick','std'};
 corrmat = corrmat(order,order);
 
 %% TSMOM

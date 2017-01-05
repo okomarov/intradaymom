@@ -7,7 +7,7 @@ idx = in(dates,OPT_.DATE_RANGE);
 out = table();
 fun = @(ret,count,sig,N) [reshape(nanmean(ret),N)*252, round(reshape(nanmean(count),N)), reshape(nanmean(sig),N(1),[],1)];
 % 
-% N = [3,5];
+N = [3,5];
 % [ptfret, ~, count, avg_sig] = portfolio_sort(hpr(idx,:), {data.cap(idx,:), signal(idx,:)},'PortfolioNumber',N);
 % out = formatOut(out,'Size',fun, ptfret, count,avg_sig,N);
 % 
@@ -20,17 +20,16 @@ fun = @(ret,count,sig,N) [reshape(nanmean(ret),N)*252, round(reshape(nanmean(cou
 % [ptfret, ~, count, avg_sig] = portfolio_sort(hpr(idx,:), {data.skew(idx,:), signal(idx,:)},'PortfolioNumber',N);
 % out = formatOut(out,'Skewness',fun, ptfret, count,avg_sig,N);
 % 
-% [ptfret, ~, count, avg_sig] = portfolio_sort(hpr(idx,:), {data.tick(idx,:), signal(idx,:)},'PortfolioNumber',N);
-% out = formatOut(out,'Tick',fun, ptfret, count,avg_sig,N);
+[ptfret, ~, count, avg_sig] = portfolio_sort(hpr(idx,:), {data.tick(idx,:), signal(idx,:)},'PortfolioNumber',N);
+out = formatOut(out,'Tick',fun, ptfret, count,avg_sig,N);
 % 
 % [ptfret, ~, count, avg_sig] = portfolio_sort(hpr(idx,:), {data.amihud(idx,:), signal(idx,:)},'PortfolioNumber',N);
 % out = formatOut(out,'Illiquidity',fun, ptfret, count,avg_sig,N);
-
-% SP500 members
-N = [2,5];
-[ptfret, ~, count, avg_sig] = portfolio_sort(hpr(idx,:), {data.issp(idx,:)+1, signal(idx,:)},'PortfolioNumber',N, 'PortfolioEdges',{1:3,[]});
-out = formatOut(out,'Size',fun, ptfret, count,avg_sig,N);
-
+% 
+% N = [2,5];
+% [ptfret, ~, count, avg_sig] = portfolio_sort(hpr(idx,:), {data.issp(idx,:)+1, signal(idx,:)},'PortfolioNumber',N, 'PortfolioEdges',{1:3,[]});
+% out = formatOut(out,'Size',fun, ptfret, count,avg_sig,N);
+% 
 % N = [12,5];
 % [ptfret, ~, count,avg_sig] = portfolio_sort(hpr(idx,:), {double(data.industry(idx,:)), signal(idx,:)},'PortfolioNumber',N,'PortfolioEdges',{0:12,[]});
 % out = formatOut(out,'Industry',fun, ptfret, count, avg_sig, N);
