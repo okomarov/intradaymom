@@ -131,8 +131,10 @@ catch
     save data_snapshot.mat data dates permnos OPT_ -v7.3
 end
 %% Correlations characteristics
-names   = {'size','illiq','tick','vol','skew','volume'};
+names   = {'size','illiq','tick','std','skew','volume'};
 corrmat = corrxs(cat(3, data.cap, data.amihud, data.tick, data.vol, data.skew,data.volume), names);
+order = {'size','volume','skew','illiq','tick','std'};
+corrmat = corrmat(order,order);
 
 %% TSMOM
 ptfret_ts                           = {}; stats_ts = {};
