@@ -1,18 +1,24 @@
 %% Options
 OPT_LAGDAY     = 1;
-OPT_HASWEIGHTS = true;
-OPT_NOMICRO    = true;
+OPT_NO_MICRO    = true;
 
-OPT_CHECK_CRSP = true;
-
-OPT_PTFNUM_UN = 5;
+OPT_CHECK_CRSP = false;
+% OPT_PTFNUM_UN = 5;
 
 OPT_RANGES = [930, 1000, 1030, 1100, 1130, 1200, 1230, 1300, 1330, 1400, 1430, 1500, 1530]'*100;
+
+OPT_USE_WEIGHTS = false;
+OPT_USE_VOL     = true;
+
+OPT_VOL_AVG    = 'e';
+OPT_VOL_LAG    = 60;
+OPT_VOL_SHIFT  = OPT_VOL_LAG - 1 + OPT_LAGDAY;
+OPT_VOL_TARGET = 0.4;
 %% Intraday-average: data
 
 price_fl = loadresults('price_fl');
 
-if OPT_NOMICRO
+if OPT_NO_MICRO
     idx      = isMicrocap(price_fl,'LastPrice',OPT_LAGDAY);
     price_fl = price_fl(~idx,:);
 end
@@ -28,10 +34,12 @@ if OPT_CHECK_CRSP
 
 end
 
-% Permnos and dates
+% Permnos, dates and layers
 permnos = unique(price_fl.Permno);
 nseries = numel(permnos);
 dates   = unique(price_fl.Date);
+ndates  = numel(dates);
+nlayers = numel(OPT_RANGES);
 
 % Get market caps
 price_fl  = getMktCap(price_fl,OPT_LAGDAY);
@@ -52,9 +60,9 @@ if OPT_CHECK_CRSP
 else
     ret_crsp = NaN(size(ret_taq));
 end
-
+clear ia ib
 %% Intraday return
-if OPT_HASWEIGHTS
+if OPT_USE_WEIGHTS
     w = bsxfun(@rdivide, cap.Data, nansum(cap.Data,2));
 else
     w = repmat(1./sum(~isnan(ret_taq),2), 1,size(ret_taq,2));
@@ -65,18 +73,28 @@ ret_crsp_w = ret_crsp.*w;
 avg = [nansum(ret_crsp_w,2), nansum(ret_taq_w,2)];
 disp(nanmean(avg)*252*100)
 
-if OPT_HASWEIGHTS
+if OPT_USE_WEIGHTS
     save .\results\avg_ts_vw avg
 else
     save .\results\avg_ts_ew avg
 end
 
 %% Half-hour return
+% hh = NaN(ndates, nseries, nlayers);
+% for ii = 1:nlayers
+%     tmp        = loadresults(sprintf('halfHourRet%d',OPT_RANGES(ii)));
+%     idx        = ismembIdDate(tmp.Permno, tmp.Date, price_fl.Permno, price_fl.Date);
+%     tname      = sprintf('T%d',OPT_RANGES(ii));
+%     tmp        = myunstack(tmp(idx,:),tname);
+%     hh(:,:,ii) = tmp{:,2:end};
+% end
+% clear tmp pos idx
+% avghh = squeeze(nanmean(hh,2));
+
 avg      = table();
 avg.Date = dates;
-
 % Returns
-for ii = 1:numel(OPT_RANGES)
+for ii = 1:nlayers
     tmp          = loadresults(sprintf('halfHourRet%d',OPT_RANGES(ii)));
     [idx,pos]    = ismembIdDate(tmp.Permno, tmp.Date, price_fl.Permno, price_fl.Date);
     % Add cap
@@ -86,15 +104,16 @@ for ii = 1:numel(OPT_RANGES)
     tname        = sprintf('T%d',OPT_RANGES(ii));
     tmp          = tmp(~isnan(tmp.(tname)),:);
     [idx,subs]   = ismember(tmp.Date, avg.Date);
-    if OPT_HASWEIGHTS
+    if OPT_USE_WEIGHTS
         avg.(tname) = double(accumarray(subs(idx), tmp.(tname)(idx).* tmp.Cap(idx))) ./ ...
                       double(accumarray(subs(idx), tmp.Cap(idx)));
+    elseif OPT_HAS_VOL
     else
         avg.(tname) = double(accumarray(subs(idx), tmp.(tname)(idx), [],@mean));
     end
 end
 
-if OPT_HASWEIGHTS
+if OPT_USE_WEIGHTS
     save .\results\avg_ts_30min_vw avg
 else
     save .\results\avg_ts_30min_ew avg
@@ -165,7 +184,7 @@ nseries = numel(ff49.Permnos);
 row     = repmat((1:nobs)', 1, nseries);
 subs    = [row(:), double(ff49.Data(:)+1)];
 
-if OPT_HASWEIGHTS
+if OPT_USE_WEIGHTS
     w = bsxfun(@rdivide, cap.Data, nansum(cap.Data,2));
 else
     w = repmat(1./sum(~isnan(ret_taq),2), 1,size(ret_taq,2));
