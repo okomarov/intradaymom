@@ -251,45 +251,17 @@ print('tsmom_afternoon','-depsc','-r200','-loose')
 %% Signal prediction rate
 load dates
 
-signal = getIntradayRet(specs.NINE_TO_NOON);
-hpr    = getIntradayRet(specs.LAST_E);
+p{1} = getPredictionRates(specs.NINE_TO_NOON, specs.LAST_E, dates);
 
-total     = sum(~isnan(signal),2);
-sign_sig  = sign(signal);
-sign_hpr  = sign(hpr);
-correct   = sum(sign_sig == 1 & sign_hpr == 1,2) + sum(sign_sig == -1 & sign_hpr == -1,2);
-null      = sum(sign_sig == 0,2);
-long_only = sum(sign_hpr == 1,2);
+perc = p{1}.Correct ./(p{1}.Total - p{1}.Null); 
+mean(perc) % 43.7%
+mean(perc(dates > 20010431)) % 49.1%
 
-mean(correct./(total-null)); % 0.44
-idx = dates > 20010431;
-mean(correct(idx)./(total(idx)-null(idx))); % 0.49
+p{2} = getPredictionRates(specs.NINE_TO_ONE, specs.AFTERNOON_E, dates);
+perc = p{2}.Correct ./(p{2}.Total- p{2}.Null); 
+mean(perc) % 45.1%
+mean(perc(dates > 20010431)) % 48.0%
 
-subplot(211)
-plot(yyyymmdd2datetime(dates), movmean([correct+null,long_only]./total,[252,0])*100)
-title '252-day moving averages'
-legend 'correctly predicted' 'long positions'
-ytickformat('percentage')
-
-signal = getIntradayRet(specs.NINE_TO_ONE);
-hpr    = getIntradayRet(specs.AFTERNOON_E);
-
-% Correctly predicted and long positions
-total     = sum(~isnan(signal),2);
-sign_sig  = sign(signal);
-sign_hpr  = sign(hpr);
-correct   = sum(sign_sig == 1 & sign_hpr == 1,2) + sum(sign_sig == -1 & sign_hpr == -1,2);
-null      = sum(sign_sig == 0,2);
-long_only = sum(sign_hpr == 1,2);
-
-mean(correct./(total-null)); % 0.44
-idx = dates > 20010431;
-mean(correct(idx)./(total(idx)-null(idx))); % 0.49
-
-subplot(212)
-plot(yyyymmdd2datetime(dates), movmean([correct+null,long_only]./total,[252,0])*100)
-legend 'correctly predicted' 'long positions'
-ytickformat('percentage')
 %% Check Open/Close in TAQ vs CRSP
 OPT_NOMICRO            = true;
 OPT_OUTLIERS_THRESHOLD = 1;
