@@ -188,7 +188,7 @@ set(gca,'TickLabelInterpreter','latex','Layer','Top',...
     'Ylim',[1,numel(unyear)],'YTick',2:4:numel(unyear),'YTickLabel',unyear(2:4:end))
 view(25,30)
 print('avg_vol_time','-depsc','-r200','-loose')
-%% Stategy plots
+%% Stategy plots: ts
 load dates.mat
 
 % LAST
@@ -261,7 +261,66 @@ p{2} = getPredictionRates(specs.NINE_TO_ONE, specs.AFTERNOON_E, dates);
 perc = p{2}.Correct ./(p{2}.Total- p{2}.Null); 
 mean(perc) % 45.1%
 mean(perc(dates > 20010431)) % 48.0%
+%% Strategy plots: xs
+NUM_PTF_UNI = 5;
 
+load dates.mat
+
+% LAST
+rets = portfolio_sort(getIntradayRet(specs.LAST_E),getIntradayRet(specs.NINE_TO_NOON),'PortfolioNumber',NUM_PTF_UNI);
+
+figure
+set(gcf, 'Position', get(gcf,'Position').*[1,1,1,0.40],'PaperPositionMode','auto')
+[lvl,dt,hl] = plot_cumret(dates,rets,1,1);
+legend off, title ''
+
+% Recession patches
+YLIM       = [1,11];
+XLIM       = xlim();
+recessions = [730925,731170; 733391,733939];
+X          = recessions-datenum(XLIM(1));
+h          = patch(X(:,[1,1,2,2])', repmat([YLIM fliplr(YLIM)]',1,2),[0.9,0.9,0.9],'EdgeColor','none');
+uistack(h,'bottom')  
+
+% Markers
+y = get(hl,'Ydata');
+c = get(hl,'Color');
+mrkStep    = 15;
+text(dt(1:mrkStep:end), y{1}(1:mrkStep:end),'1','HorizontalAl','center','color',c{1})
+text(dt(1:mrkStep:end), y{5}(1:mrkStep:end),'5','HorizontalAl','center','color',c{5})
+
+set(gca, 'TickLabelInterpreter','latex','Layer','Top',...
+    'YScale','log','YLim',YLIM,'YTick',[1,2,5,10])
+
+print('xs_last30','-depsc','-r200','-loose')
+
+
+% AFTERNOON
+rets = portfolio_sort(getIntradayRet(specs.AFTERNOON_E),getIntradayRet(specs.NINE_TO_ONE),'PortfolioNumber',NUM_PTF_UNI);
+
+figure
+set(gcf, 'Position', get(gcf,'Position').*[1,1,1,0.40],'PaperPositionMode','auto')
+[lvl,dt,hl] = plot_cumret(dates,rets,1,1);
+legend off, title ''
+
+% Recession patches
+YLIM       = [0.4,5];
+XLIM       = xlim();
+recessions = [730925,731170; 733391,733939];
+X          = recessions-datenum(XLIM(1));
+h          = patch(X(:,[1,1,2,2])', repmat([YLIM fliplr(YLIM)]',1,2),[0.9,0.9,0.9],'EdgeColor','none');
+uistack(h,'bottom')  
+
+% Markers
+y = get(hl,'Ydata');
+c = get(hl,'Color');
+mrkStep    = 15;
+text(dt(1:mrkStep:end), y{1}(1:mrkStep:end),'1','HorizontalAl','center','color',c{1})
+text(dt(1:mrkStep:end), y{5}(1:mrkStep:end),'5','HorizontalAl','center','color',c{5})
+
+set(gca, 'TickLabelInterpreter','latex','Layer','Top',...
+    'YScale','log','YLim',YLIM,'YTick',[0.5, 1, 2, 4])
+print('xs_afternoon','-depsc','-r200','-loose')
 %% Check Open/Close in TAQ vs CRSP
 OPT_NOMICRO            = true;
 OPT_OUTLIERS_THRESHOLD = 1;
