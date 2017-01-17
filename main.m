@@ -171,6 +171,18 @@ ptfret_xs                           = {}; stats_xs = {};
 
 % corrmat = tril(corr(cell2mat(cellfun(@(x) x{:,end}, ptfret_xs,'un',0)),'rows','pairwise'),-1);
 % corrmat(corrmat == 0) = NaN;
+%% Cost
+% Extract manually from stats_xs average rets, then se
+%    [arrayfun(@(x)sprintf('[%.3f]',x), stats_xs{1}{3,:},'un',0)
+%    arrayfun(@(x)sprintf('[%.3f]',x), stats_xs{2}{3,:},'un',0)
+%    arrayfun(@(x)sprintf('[%.3f]',x), stats_xs{3}{3,:},'un',0)
+%    arrayfun(@(x)sprintf('[%.3f]',x), stats_xs{4}{3,:},'un',0)
+%    arrayfun(@(x)sprintf('[%.3f]',x), sqrt(nwse(nan2zero(ptfret_xs{1}{:,:})-nan2zero(ptfret_xs{2}{:,:}))),'un',0)
+%    arrayfun(@(x)sprintf('[%.3f]',x), sqrt(nwse(nan2zero(ptfret_xs{3}{:,:})-nan2zero(ptfret_xs{4}{:,:}))),'un',0)]
+
+[~,~,subs] = unique(dates/10000);
+accumarray(subs,ptfret_xs{1}{:,end}-ptfret_xs{2}{:,end},[],@mean)';
+accumarray(subs,ptfret_xs{3}{:,end}-ptfret_xs{4}{:,end},[],@mean)';
 %% Double sorts
 a = estimateSorts(specs.NINE_TO_NOON, specs.LAST_E     , data, dates, OPT_);
 b = estimateSorts(specs.NINE_TO_ONE , specs.AFTERNOON_E, data, dates, OPT_);
