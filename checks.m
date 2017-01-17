@@ -321,6 +321,89 @@ text(dt(1:mrkStep:end), y{5}(1:mrkStep:end),'5','HorizontalAl','center','color',
 set(gca, 'TickLabelInterpreter','latex','Layer','Top',...
     'YScale','log','YLim',YLIM,'YTick',[0.5, 1, 2, 4])
 print('xs_afternoon','-depsc','-r200','-loose')
+%% Strategy plots: xs plus overnight
+NUM_PTF_UNI = 5;
+
+load data_snapshot.mat
+
+% LAST
+signal = getIntradayRet(specs.NINE_TO_NOON);
+rets   = portfolio_sort(getIntradayRet(specs.LAST_E),signal,'PortfolioNumber',NUM_PTF_UNI);
+rets   = rets(:,[1,end]);
+signal = (1+signal) .* (1 + data.reton) - 1;
+tmp    = portfolio_sort(getIntradayRet(specs.LAST_E),signal,'PortfolioNumber',NUM_PTF_UNI);
+rets   = [rets(:,1),tmp(:,1), rets(:,end),tmp(:,end)];
+
+figure
+set(gcf, 'Position', get(gcf,'Position').*[1,1,1,0.40],'PaperPositionMode','auto')
+[lvl,dt,hl] = plot_cumret(dates,rets,1,1);
+legend off, title ''
+set(hl([2,4]),'LineStyle','--')
+
+% Recession patches
+YLIM       = [0.6,40];
+XLIM       = xlim();
+recessions = [730925,731170; 733391,733939];
+X          = recessions-datenum(XLIM(1));
+h          = patch(X(:,[1,1,2,2])', repmat([YLIM fliplr(YLIM)]',1,2),[0.9,0.9,0.9],'EdgeColor','none');
+uistack(h,'bottom')  
+
+% Markers
+y = get(hl,'Ydata');
+c = get(hl,'Color');
+mrkStep    = 15;
+text(dt(1:mrkStep:end), y{1}(1:mrkStep:end),'1','HorizontalAl','center','color',c{1})
+text(dt(1:mrkStep:end), y{2}(1:mrkStep:end),'1','HorizontalAl','center','color',c{1})
+text(dt(1:mrkStep:end), y{3}(1:mrkStep:end),'5','HorizontalAl','center','color',c{2})
+text(dt(1:mrkStep:end), y{4}(1:mrkStep:end),'5','HorizontalAl','center','color',c{2})
+set(hl(2),'Color',c{1})
+set(hl(3),'Color',c{2})
+set(hl(4),'Color',c{2})
+
+
+set(gca, 'TickLabelInterpreter','latex','Layer','Top',...
+    'YScale','log','YLim',YLIM,'YTick',[1,3,10,30])
+
+print('xs_last_on','-depsc','-r200','-loose')
+
+% AFTERNOON
+signal = getIntradayRet(specs.NINE_TO_ONE);
+rets   = portfolio_sort(getIntradayRet(specs.AFTERNOON_E),signal,'PortfolioNumber',NUM_PTF_UNI);
+rets   = rets(:,[1,end]);
+signal = (1+signal) .* (1 + data.reton) - 1;
+tmp    = portfolio_sort(getIntradayRet(specs.AFTERNOON_E),signal,'PortfolioNumber',NUM_PTF_UNI);
+rets   = [rets(:,1),tmp(:,1), rets(:,end),tmp(:,end)];
+
+figure
+set(gcf, 'Position', get(gcf,'Position').*[1,1,1,0.40],'PaperPositionMode','auto')
+[lvl,dt,hl] = plot_cumret(dates,rets,1,1);
+legend off, title ''
+set(hl([2,4]),'LineStyle','--')
+
+% Recession patches
+YLIM       = [0.6,10];
+XLIM       = xlim();
+recessions = [730925,731170; 733391,733939];
+X          = recessions-datenum(XLIM(1));
+h          = patch(X(:,[1,1,2,2])', repmat([YLIM fliplr(YLIM)]',1,2),[0.9,0.9,0.9],'EdgeColor','none');
+uistack(h,'bottom')  
+
+% Markers
+y = get(hl,'Ydata');
+c = get(hl,'Color');
+mrkStep    = 15;
+text(dt(1:mrkStep:end), y{1}(1:mrkStep:end),'1','HorizontalAl','center','color',c{1})
+text(dt(1:mrkStep:end), y{2}(1:mrkStep:end),'1','HorizontalAl','center','color',c{1})
+text(dt(1:mrkStep:end), y{3}(1:mrkStep:end),'5','HorizontalAl','center','color',c{2})
+text(dt(1:mrkStep:end), y{4}(1:mrkStep:end),'5','HorizontalAl','center','color',c{2})
+set(hl(2),'Color',c{1})
+set(hl(3),'Color',c{2})
+set(hl(4),'Color',c{2})
+
+set(gca, 'TickLabelInterpreter','latex','Layer','Top',...
+    'YScale','log','YLim',YLIM,'YTick',[1,2,4,8])
+
+print('xs_afternoon_on','-depsc','-r200','-loose')
 %% Check Open/Close in TAQ vs CRSP
 OPT_NOMICRO            = true;
 OPT_OUTLIERS_THRESHOLD = 1;
