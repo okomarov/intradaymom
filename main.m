@@ -175,6 +175,14 @@ ptfret_xs                           = {}; stats_xs = {};
 a = estimateSorts(specs.NINE_TO_NOON, specs.LAST_E     , data, dates, OPT_);
 b = estimateSorts(specs.NINE_TO_ONE , specs.AFTERNOON_E, data, dates, OPT_);
 
+% % Tstats
+% [arrayfun(@(x)sprintf('[%.1f]',x), a.Tstat{1},'un',0) 
+% arrayfun(@(x)sprintf('[%.1f]',x), a.Tstat{2},'un',0) 
+% arrayfun(@(x)sprintf('[%.1f]',x), a.Tstat{3},'un',0) 
+% arrayfun(@(x)sprintf('[%.1f]',x), b.Tstat{1},'un',0) 
+% arrayfun(@(x)sprintf('[%.1f]',x), b.Tstat{2},'un',0) 
+% arrayfun(@(x)sprintf('[%.1f]',x), b.Tstat{3},'un',0)]
+
 %% Regress on long-only
 results = regressOnLongOnly(results, OPT_.REGRESSION_LONG_MINOBS, OPT_.REGRESSION_LONG_ALPHA);
 
