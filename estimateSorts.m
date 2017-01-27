@@ -49,5 +49,10 @@ function out = formatOut(out, label, fun, ret,count,sig,N)
 out{label,'Res'}    = {fun(ret, count, sig, N)};
 out{label,'SparkR'} = {getSparkline(out.Res{label}(:,1:N(2)),[-0.1,0.9])};
 out{label,'SparkC'} = {getSparkline(out.Res{label}(:,N(2)+1:N(2)*2),[-0.1,0.9])};
-out{label,'Tstat'}  = {reshape(nanmean(ret)./sqrt(nwse(ret)),N)};
+try
+    out{label,'Tstat'}  = {reshape(nanmean(ret)./sqrt(nwse(ret)),N)};
+% Groups    
+catch
+    out{label,'Tstat'}  = {cell2mat(cellfun(@(x)  nanmean(x)./sqrt(nwse(x)),ret,'un',0))};
+end
 end
