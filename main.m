@@ -194,7 +194,24 @@ b = estimateSorts(specs.NINE_TO_ONE , specs.AFTERNOON_E, data, dates, OPT_);
 % arrayfun(@(x)sprintf('[%.1f]',x), b.Tstat{1},'un',0) 
 % arrayfun(@(x)sprintf('[%.1f]',x), b.Tstat{2},'un',0) 
 % arrayfun(@(x)sprintf('[%.1f]',x), b.Tstat{3},'un',0)]
+%% Cost analysis
 
+% High-low spread by 2012 Corwin, Schults
+hl                       = estimateHighLowSpread(OPT_.VOL_LAG);
+[~,pos]                  = ismembIdDate(data.mst.Permno, data.mst.Date, hl.Permno, hl.Date);
+spread.hl                = myunstack(hl(pos,:),'Spread');
+spread.hl                = spread.hl{:,2:end};
+spread.hl(spread.hl < 0) = 0;
+
+% Closing bid-ask spread to the mid-point
+dsf          = loadresults('dsfquery','..\results');
+[~,pos]      = ismembIdDate(data.mst.Permno, data.mst.Date, dsf.Permno, dsf.Date);
+dsf          = dsf(pos,:);
+dsf.BAspread = 2*(dsf.Ask-dsf.Bid)./(dsf.Ask+dsf.Bid);
+spread.ba    = myunstack(dsf(:,{'Permno','Date','BAspread'}),'BAspread');
+spread.ba    = spread.ba{:,2:end};
+
+clear hl dsf
 %% Regress on long-only
 results = regressOnLongOnly(results, OPT_.REGRESSION_LONG_MINOBS, OPT_.REGRESSION_LONG_ALPHA);
 
