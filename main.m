@@ -129,7 +129,7 @@ catch
     data.amihud   = amihud;
     data.issp     = issp;
 
-    save data_snapshot.mat data dates permnos OPT_ -v7.3
+    save data_snapshot.mat data dates permnos OPT_ myunstack -v7.3
 end
 %% Correlations characteristics
 names   = {'size','illiq','tick','std','skew','volume'};
