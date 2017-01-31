@@ -437,12 +437,12 @@ ptfret_xs                           = {}; stats_xs = {};
 [ptfret_xs{end+1}, stats_xs{end+1}] = estimateXSmom(specs.NINE_TO_ONE , specs.AFTERNOON_E, 	data,dates,OPT_,true);
 [ptfret_xs{end+1}, stats_xs{end+1}] = estimateXSmom(specs.NINE_TO_ONE , specs.AFTERNOON_V,  data,dates,OPT_,false);
 
-% High-low spread by 2012 Corwin, Schults
-hl                       = estimateHighLowSpread(OPT_.VOL_LAG);
-[~,pos]                  = ismembIdDate(data.mst.Permno, data.mst.Date, hl.Permno, hl.Date);
-spread.hl                = myunstack(hl(pos,:),'Spread');
-spread.hl                = spread.hl{:,2:end};
-spread.hl(spread.hl < 0) = 0;
+% % High-low spread by 2012 Corwin, Schults
+% hl                       = estimateHighLowSpread(OPT_.VOL_LAG);
+% [~,pos]                  = ismembIdDate(data.mst.Permno, data.mst.Date, hl.Permno, hl.Date);
+% spread.hl                = myunstack(hl(pos,:),'Spread');
+% spread.hl                = spread.hl{:,2:end};
+% spread.hl(spread.hl < 0) = NaN;
 
 % Closing bid-ask spread to the mid-point
 dsf          = loadresults('dsfquery','..\results');
@@ -450,15 +450,21 @@ dsf          = loadresults('dsfquery','..\results');
 dsf          = dsf(pos,:);
 dsf          = convertColumn(dsf,'double',{'Bid','Ask'});
 dsf.BAspread = 2*(dsf.Ask-dsf.Bid)./(dsf.Ask+dsf.Bid);
+dsf.BAspread(dsf.BAspread < 0) = NaN;
 spread.ba    = myunstack(dsf(:,{'Permno','Date','BAspread'}),'BAspread');
 spread.ba    = spread.ba{:,2:end};
 clear hl dsf
 
 % Ptfret costs
-spread.hl_ptf = portfolio_sort(spread.hl, getIntradayRet(specs.NINE_TO_NOON),'PortfolioNumber',OPT_.NUM_PTF_UNI);
-spread.ba_ptf = portfolio_sort(spread.ba, getIntradayRet(specs.NINE_TO_NOON),'PortfolioNumber',OPT_.NUM_PTF_UNI);
+% [spread.hl_ptf,~,count] = portfolio_sort(spread.hl, getIntradayRet(specs.NINE_TO_NOON),'PortfolioNumber',OPT_.NUM_PTF_UNI);
+[spread.ba_ptf,~,count] = portfolio_sort(spread.ba, getIntradayRet(specs.NINE_TO_NOON),'PortfolioNumber',OPT_.NUM_PTF_UNI);
 
-ptfdiff = @(ret, cost, costall) nan2zero(ret) - nan2zero([cost, costall]);
+% Threshold
+tmp = spread.ba;
+tmp(spread.ba > prctile(spread.ba, 10,2)) = NaN;
+[spread.ba_ptf,~,count] = portfolio_sort(tmp, getIntradayRet(specs.NINE_TO_NOON),'PortfolioNumber',5);
+
+ptfdiff = @(ret, cost, costall) ret - nan2zero([cost, costall]);
 
 % Table
 printse = @(retdiff) arrayfun(@(x)sprintf('[%.3f]',x), sqrt(nwse(retdiff)),'un',0);
