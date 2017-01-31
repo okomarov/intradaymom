@@ -171,18 +171,6 @@ ptfret_xs                           = {}; stats_xs = {};
 
 % corrmat = tril(corr(cell2mat(cellfun(@(x) x{:,end}, ptfret_xs,'un',0)),'rows','pairwise'),-1);
 % corrmat(corrmat == 0) = NaN;
-%% Cost
-% Extract manually from stats_xs average rets, then se
-%    [arrayfun(@(x)sprintf('[%.3f]',x), stats_xs{1}{3,:},'un',0)
-%    arrayfun(@(x)sprintf('[%.3f]',x), stats_xs{2}{3,:},'un',0)
-%    arrayfun(@(x)sprintf('[%.3f]',x), stats_xs{3}{3,:},'un',0)
-%    arrayfun(@(x)sprintf('[%.3f]',x), stats_xs{4}{3,:},'un',0)
-%    arrayfun(@(x)sprintf('[%.3f]',x), sqrt(nwse(nan2zero(ptfret_xs{1}{:,:})-nan2zero(ptfret_xs{2}{:,:}))),'un',0)
-%    arrayfun(@(x)sprintf('[%.3f]',x), sqrt(nwse(nan2zero(ptfret_xs{3}{:,:})-nan2zero(ptfret_xs{4}{:,:}))),'un',0)]
-
-[~,~,subs] = unique(dates/10000);
-accumarray(subs,ptfret_xs{1}{:,end}-ptfret_xs{2}{:,end},[],@mean)';
-accumarray(subs,ptfret_xs{3}{:,end}-ptfret_xs{4}{:,end},[],@mean)';
 %% Double sorts
 a = estimateSorts(specs.NINE_TO_NOON, specs.LAST_E     , data, dates, OPT_);
 b = estimateSorts(specs.NINE_TO_ONE , specs.AFTERNOON_E, data, dates, OPT_);
@@ -194,24 +182,8 @@ b = estimateSorts(specs.NINE_TO_ONE , specs.AFTERNOON_E, data, dates, OPT_);
 % arrayfun(@(x)sprintf('[%.1f]',x), b.Tstat{1},'un',0) 
 % arrayfun(@(x)sprintf('[%.1f]',x), b.Tstat{2},'un',0) 
 % arrayfun(@(x)sprintf('[%.1f]',x), b.Tstat{3},'un',0)]
-%% Cost analysis
 
-% High-low spread by 2012 Corwin, Schults
-hl                       = estimateHighLowSpread(OPT_.VOL_LAG);
-[~,pos]                  = ismembIdDate(data.mst.Permno, data.mst.Date, hl.Permno, hl.Date);
-spread.hl                = myunstack(hl(pos,:),'Spread');
-spread.hl                = spread.hl{:,2:end};
-spread.hl(spread.hl < 0) = 0;
 
-% Closing bid-ask spread to the mid-point
-dsf          = loadresults('dsfquery','..\results');
-[~,pos]      = ismembIdDate(data.mst.Permno, data.mst.Date, dsf.Permno, dsf.Date);
-dsf          = dsf(pos,:);
-dsf.BAspread = 2*(dsf.Ask-dsf.Bid)./(dsf.Ask+dsf.Bid);
-spread.ba    = myunstack(dsf(:,{'Permno','Date','BAspread'}),'BAspread');
-spread.ba    = spread.ba{:,2:end};
-
-clear hl dsf
 %% Regress on long-only
 results = regressOnLongOnly(results, OPT_.REGRESSION_LONG_MINOBS, OPT_.REGRESSION_LONG_ALPHA);
 

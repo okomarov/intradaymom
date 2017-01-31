@@ -427,6 +427,106 @@ ptf = cat(3,getXS(specs.NINE_TO_NOON, specs.LAST_E),...
     getXS(specs.TEN_TO_ONE, specs.SLAST_E));
 tmp = arrayfun(@(x) corr(squeeze(ptf(:,x,:)),'rows','pairwise'),1:NUM_PTF_UNI,'un',0);
 tmp = nanmean(cat(3,tmp{:}),3)
+%% Cost analysis
+
+load data_snapshot.mat
+
+ptfret_xs                           = {}; stats_xs = {};
+[ptfret_xs{end+1}, stats_xs{end+1}] = estimateXSmom(specs.NINE_TO_NOON, specs.LAST_E,       data,dates,OPT_,true);
+[ptfret_xs{end+1}, stats_xs{end+1}] = estimateXSmom(specs.NINE_TO_NOON, specs.LAST_V,       data,dates,OPT_,false);
+[ptfret_xs{end+1}, stats_xs{end+1}] = estimateXSmom(specs.NINE_TO_ONE , specs.AFTERNOON_E, 	data,dates,OPT_,true);
+[ptfret_xs{end+1}, stats_xs{end+1}] = estimateXSmom(specs.NINE_TO_ONE , specs.AFTERNOON_V,  data,dates,OPT_,false);
+
+% High-low spread by 2012 Corwin, Schults
+hl                       = estimateHighLowSpread(OPT_.VOL_LAG);
+[~,pos]                  = ismembIdDate(data.mst.Permno, data.mst.Date, hl.Permno, hl.Date);
+spread.hl                = myunstack(hl(pos,:),'Spread');
+spread.hl                = spread.hl{:,2:end};
+spread.hl(spread.hl < 0) = 0;
+
+% Closing bid-ask spread to the mid-point
+dsf          = loadresults('dsfquery','..\results');
+[~,pos]      = ismembIdDate(data.mst.Permno, data.mst.Date, dsf.Permno, dsf.Date);
+dsf          = dsf(pos,:);
+dsf          = convertColumn(dsf,'double',{'Bid','Ask'});
+dsf.BAspread = 2*(dsf.Ask-dsf.Bid)./(dsf.Ask+dsf.Bid);
+spread.ba    = myunstack(dsf(:,{'Permno','Date','BAspread'}),'BAspread');
+spread.ba    = spread.ba{:,2:end};
+clear hl dsf
+
+% Ptfret costs
+spread.hl_ptf = portfolio_sort(spread.hl, getIntradayRet(specs.NINE_TO_NOON),'PortfolioNumber',OPT_.NUM_PTF_UNI);
+spread.ba_ptf = portfolio_sort(spread.ba, getIntradayRet(specs.NINE_TO_NOON),'PortfolioNumber',OPT_.NUM_PTF_UNI);
+
+ptfdiff = @(ret, cost, costall) nan2zero(ret) - nan2zero([cost, costall]);
+
+% Table
+printse = @(retdiff) arrayfun(@(x)sprintf('[%.3f]',x), sqrt(nwse(retdiff)),'un',0);
+mydisp  = @(retdiff) [num2cell(nanmean(retdiff));  printse(retdiff)];
+
+[mydisp(ptfret_xs{1}{:,:});
+ mydisp(ptfret_xs{3}{:,:});
+ num2cell([nanmean(spread.hl_ptf,1), nanmean(nanmean(spread.hl,2),1)]); 
+ num2cell([nanmean(spread.ba_ptf,1), nanmean(nanmean(spread.ba,2),1)]);
+ mydisp(ptfdiff(ptfret_xs{1}{:,:}, spread.hl_ptf, nanmean(spread.hl,2)));
+ mydisp(ptfdiff(ptfret_xs{1}{:,:}, spread.ba_ptf, nanmean(spread.ba,2)));
+ mydisp(ptfret_xs{2}{:,:});
+ mydisp(ptfdiff(ptfret_xs{2}{:,:}, spread.hl_ptf, nanmean(spread.hl,2)));
+ mydisp(ptfdiff(ptfret_xs{2}{:,:}, spread.ba_ptf, nanmean(spread.ba,2)));
+ mydisp(ptfret_xs{4}{:,:})]; 
+
+% Figure last
+y  = [nanmean(ptfret_xs{1}{:,:},1); 
+      nanmean(ptfdiff(ptfret_xs{1}{:,:}, spread.hl_ptf, nanmean(spread.hl,2)),1);
+      nanmean(ptfret_xs{2}{:,:},1)];
+y  = [y(:,1:end-1) NaN(3,1) y(:,end)];
+se = 2*[stats_xs{1}{'Se',:}; 
+      sqrt(nwse(ptfdiff(ptfret_xs{1}{:,:}, spread.hl_ptf, nanmean(spread.hl,2))));
+      stats_xs{2}{'Se',:}]; 
+se = [se(:,1:end-1) NaN(3,1) se(:,end)];   
+
+figure
+set(gcf, 'Position', get(gcf,'Position').*[1,1,1,0.4],'PaperPositionMode','auto')
+h      = bar(y',1,'grouped','LineStyle','none');
+styles = {'--s','-.^',':*'};
+hold on
+for ii = 1:numel(h)
+    errorbar(getBarCenter(h(ii)), y(ii,:), se(ii,:), styles{ii},'MarkerSize',5,'MarkerFaceColor','auto');
+end
+delete(h)
+XLIM = [0,13];
+h    = plot(XLIM, [0,0],'Color',[0.85,0.85,0.85]);
+uistack(h,'bottom');
+set(gca, 'TickLabelInterpreter','latex','Layer','Top',...
+    'YLim',[-0.02,0.1],'Ytick',0:0.03:0.09,'XLim',XLIM,'XTick',[1:10, 12],'XtickLabels',['Lose'; cellstr(num2str((2:9)')); 'Win'; 'All'])
+print('imom_cost_last','-depsc','-r200','-loose')
+
+% Figure afternoon
+y  = [nanmean(ptfret_xs{3}{:,:},1); 
+      nanmean(ptfdiff(ptfret_xs{3}{:,:}, spread.hl_ptf, nanmean(spread.hl,2)),1);
+      nanmean(ptfret_xs{4}{:,:},1)];
+y  = [y(:,1:end-1) NaN(3,1) y(:,end)];
+se = 2*[stats_xs{3}{'Se',:}; 
+      sqrt(nwse(ptfdiff(ptfret_xs{3}{:,:}, spread.hl_ptf, nanmean(spread.hl,2))));
+      stats_xs{4}{'Se',:}]; 
+se = [se(:,1:end-1) NaN(3,1) se(:,end)];   
+
+figure
+set(gcf, 'Position', get(gcf,'Position').*[1,1,1,0.4],'PaperPositionMode','auto')
+h      = bar(y',1,'grouped','LineStyle','none');
+styles = {'--s','-.^',':*'};
+hold on
+for ii = 1:numel(h)
+    errorbar(getBarCenter(h(ii)), y(ii,:), se(ii,:), styles{ii},'MarkerSize',5,'MarkerFaceColor','auto');
+end
+delete(h)
+XLIM = [0,13];
+h    = plot(XLIM, [0,0],'Color',[0.85,0.85,0.85]);
+uistack(h,'bottom');
+set(gca, 'TickLabelInterpreter','latex','Layer','Top',...
+    'YLim',[-0.06,0.1],'Ytick',-0.04:0.04:0.08,'XLim',XLIM,'XTick',[1:10, 12],'XtickLabels',['Lose'; cellstr(num2str((2:9)')); 'Win'; 'All'])
+print('imom_cost_afternoon','-depsc','-r200','-loose')
+
 %% Check Open/Close in TAQ vs CRSP
 OPT_NOMICRO            = true;
 OPT_OUTLIERS_THRESHOLD = 1;
