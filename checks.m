@@ -62,11 +62,11 @@ XLIM = [0, nranges+2];
 favg = @(p) prctile(avg_ts,p,1)*252*100;
 errorbar(1:nranges+1,favg(50),favg(25)-favg(50),favg(75)-favg(50),'x','MarkerEdgeCOlor','r','LineWidth',0.75);
 hold on
-h = plot(XLIM, [0,0],'Color',[0.85,0.85,0.85]);
+h    = plot(XLIM, [0,0],'Color',[0.85,0.85,0.85]);
 uistack(h,'bottom');
 set(gca, 'TickLabelInterpreter','latex','Layer','Top',...
     'YTick',-50:50:100,'Ylim',[-55,85],'XTick',1:nranges+1, 'XTickLabel',labels([1,2:2:end],:),'Xlim',XLIM)
-print('avgret','-depsc','-r200','-loose')
+print('imom_avgret','-depsc','-r200','-loose')
 
 % Plot overall deviations
 figure
@@ -75,7 +75,7 @@ fdev = @(p) prctile(dev_ts,p,1)*sqrt(252)*100;
 errorbar(1:nranges+1,fdev(50),fdev(25)-fdev(50),fdev(75)-fdev(50),'x','MarkerEdgeCOlor','r','LineWidth',0.75);
 set(gca, 'TickLabelInterpreter','latex','Layer','Top',...
     'YTick',0:25:50, 'Ylim',[0,50],'XTick',1:nranges+1, 'XTickLabel',labels, 'Xlim',XLIM)
-print('avgdev','-depsc','-r200','-loose')
+print('imom_avgdev','-depsc','-r200','-loose')
 
 % Plot time-evolution
 figure
@@ -100,7 +100,7 @@ matlab2tikz('avg_time_reton.tex','StrictFontSize',true)
 figure
 set(gcf, 'Position', get(gcf,'Position').*[1,1,1,0.4],'PaperPositionMode','auto')
 yret(:,1) = NaN;
-h              = ribbon(yret*252*100);
+h         = ribbon(yret*252*100);
 set(h, {'CData'}, get(h,'ZData'), 'FaceColor','interp','LineStyle','none')
 view(0,90)
 set(gca,'TickLabelInterpreter','latex','Layer','Top',...
@@ -108,13 +108,13 @@ set(gca,'TickLabelInterpreter','latex','Layer','Top',...
     'XTick',1:nranges+1, 'XTickLabel',labels([1,2:2:end]),'Xlim',XLIM,...
     'YDir','reverse','Ylim',[1,numel(unyear)],'YTick',2:4:numel(unyear),'YTickLabel',unyear(2:4:end))
 colorbar('TickLabelInterpreter','latex')
-ca = caxis();
+ca        = caxis();
 hold on
 bar([NaN repmat(18,1,nranges)],'FaceColor','none','BarWidth',0.76)
 caxis([-35 35]);
 matlab2tikz('avg_time.tex','StrictFontSize',true)
 
-% print('avg_time','-depsc','-r200','-loose')
+% print('imom_avg_time','-depsc','-r200','-loose')
 %% Volume: average and std
 try
     load('results\avg_hh_volume.mat')
@@ -164,7 +164,7 @@ favg = @(p) prctile(avg_ts,p,1);
 errorbar(1:nranges,favg(50),favg(25)-favg(50),favg(75)-favg(50),'x','MarkerEdgeCOlor','r','LineWidth',0.75);
 set(gca, 'TickLabelInterpreter','latex','Layer','Top',...
     'YTick',0:200:600,'Ylim',[0,600],'XTick',1:nranges, 'XTickLabel',labels)
-print('avgvol','-depsc','-r200','-loose')
+print('imom_avgvol','-depsc','-r200','-loose')
 
 figure
 set(gcf, 'Position', get(gcf,'Position').*[1,1,1,0.4],'PaperPositionMode','auto')
@@ -172,7 +172,7 @@ fdev = @(p) prctile(dev_ts,p,1);
 errorbar(1:nranges,fdev(50),fdev(25)-fdev(50),fdev(75)-fdev(50),'x','MarkerEdgeCOlor','r','LineWidth',0.75);
 set(gca, 'TickLabelInterpreter','latex','Layer','Top',...
     'Ylim',[0,1200],'XTick',1:nranges, 'XTickLabel',labels)
-print('avgdevvol','-depsc','-r200','-loose')
+print('imom_avgdevvol','-depsc','-r200','-loose')
 
 % Plot time-evolution
 figure
@@ -187,7 +187,7 @@ set(gca,'TickLabelInterpreter','latex','Layer','Top',...
     'XTick',1:nranges, 'XTickLabel',labels(1:2:end),...
     'Ylim',[1,numel(unyear)],'YTick',2:4:numel(unyear),'YTickLabel',unyear(2:4:end))
 view(25,30)
-print('avg_vol_time','-depsc','-r200','-loose')
+print('imom_avg_vol_time','-depsc','-r200','-loose')
 %% Stategy plots: ts
 load dates.mat
 
@@ -197,7 +197,7 @@ rets = makeTsmom(getIntradayRet(specs.NINE_TO_NOON), getIntradayRet(specs.LAST_E
 figure
 set(gcf, 'Position', get(gcf,'Position').*[1,1,1,0.40],'PaperPositionMode','auto')
 [lvl,dt,h] = plot_cumret(dates,rets,1,1);
-hl(4) = h(4);
+hl(4)      = h(4);
 legend off, title ''
 % Recession patches
 YLIM       = [0.95,25];
@@ -210,7 +210,7 @@ uistack(h,'bottom')
 hold on
 mrkStep    = 15;
 set(gca,'ColorOrderIndex',1)
-hl(1:3) = plot(dt(1:mrkStep:end),lvl(1:mrkStep:end,1),'x',...
+hl(1:3)    = plot(dt(1:mrkStep:end),lvl(1:mrkStep:end,1),'x',...
                dt(1:mrkStep:end),lvl(1:mrkStep:end,2),'o',...
                dt(1:mrkStep:end),lvl(1:mrkStep:end,3),'^');
 set(gca, 'TickLabelInterpreter','latex','Layer','Top',...
@@ -220,7 +220,7 @@ set(gca, 'TickLabelInterpreter','latex','Layer','Top',...
 set(h,'Location','northwest')
 set(hi(1:4),'Interpreter','latex')
 set(hi(5:2:11),'LineStyle','-')
-print('tsmom_last30','-depsc','-r200','-loose')
+print('imom_tsmom_last30','-depsc','-r200','-loose')
 
 
 % AFTERNOON
@@ -247,7 +247,7 @@ plot(dt(1:mrkStep:end),lvl(1:mrkStep:end,1),'x',...
 
 set(gca, 'TickLabelInterpreter','latex','Layer','Top',...
     'YScale','log','YLim',YLIM,'YTick',[0.45,1,2,5])
-print('tsmom_afternoon','-depsc','-r200','-loose')
+print('imom_tsmom_afternoon','-depsc','-r200','-loose')
 %% Signal prediction rate
 load dates
 
@@ -283,16 +283,16 @@ h          = patch(X(:,[1,1,2,2])', repmat([YLIM fliplr(YLIM)]',1,2),[0.9,0.9,0.
 uistack(h,'bottom')  
 
 % Markers
-y = get(hl,'Ydata');
-c = get(hl,'Color');
-mrkStep    = 15;
+y       = get(hl,'Ydata');
+c       = get(hl,'Color');
+mrkStep = 15;
 text(dt(1:mrkStep:end), y{1}(1:mrkStep:end),'1','HorizontalAl','center','color',c{1})
 text(dt(1:mrkStep:end), y{5}(1:mrkStep:end),'5','HorizontalAl','center','color',c{5})
 
 set(gca, 'TickLabelInterpreter','latex','Layer','Top',...
     'YScale','log','YLim',YLIM,'YTick',[1,2,5,10])
 
-print('xs_last30','-depsc','-r200','-loose')
+print('imom_xs_last30','-depsc','-r200','-loose')
 
 
 % AFTERNOON
@@ -312,15 +312,15 @@ h          = patch(X(:,[1,1,2,2])', repmat([YLIM fliplr(YLIM)]',1,2),[0.9,0.9,0.
 uistack(h,'bottom')  
 
 % Markers
-y = get(hl,'Ydata');
-c = get(hl,'Color');
-mrkStep    = 15;
+y       = get(hl,'Ydata');
+c       = get(hl,'Color');
+mrkStep = 15;
 text(dt(1:mrkStep:end), y{1}(1:mrkStep:end),'1','HorizontalAl','center','color',c{1})
 text(dt(1:mrkStep:end), y{5}(1:mrkStep:end),'5','HorizontalAl','center','color',c{5})
 
 set(gca, 'TickLabelInterpreter','latex','Layer','Top',...
     'YScale','log','YLim',YLIM,'YTick',[0.5, 1, 2, 4])
-print('xs_afternoon','-depsc','-r200','-loose')
+print('imom_xs_afternoon','-depsc','-r200','-loose')
 %% Strategy plots: xs plus overnight
 NUM_PTF_UNI = 5;
 
@@ -349,9 +349,9 @@ h          = patch(X(:,[1,1,2,2])', repmat([YLIM fliplr(YLIM)]',1,2),[0.9,0.9,0.
 uistack(h,'bottom')  
 
 % Markers
-y = get(hl,'Ydata');
-c = get(hl,'Color');
-mrkStep    = 15;
+y       = get(hl,'Ydata');
+c       = get(hl,'Color');
+mrkStep = 15;
 text(dt(1:mrkStep:end), y{1}(1:mrkStep:end),'1','HorizontalAl','center','color',c{1})
 text(dt(1:mrkStep:end), y{2}(1:mrkStep:end),'1','HorizontalAl','center','color',c{1})
 text(dt(1:mrkStep:end), y{3}(1:mrkStep:end),'5','HorizontalAl','center','color',c{2})
@@ -364,7 +364,7 @@ set(hl(4),'Color',c{2})
 set(gca, 'TickLabelInterpreter','latex','Layer','Top',...
     'YScale','log','YLim',YLIM,'YTick',[1,3,10,30])
 
-print('xs_last_on','-depsc','-r200','-loose')
+print('imom_xs_last_on','-depsc','-r200','-loose')
 
 % AFTERNOON
 signal = getIntradayRet(specs.NINE_TO_ONE);
@@ -389,9 +389,9 @@ h          = patch(X(:,[1,1,2,2])', repmat([YLIM fliplr(YLIM)]',1,2),[0.9,0.9,0.
 uistack(h,'bottom')  
 
 % Markers
-y = get(hl,'Ydata');
-c = get(hl,'Color');
-mrkStep    = 15;
+y       = get(hl,'Ydata');
+c       = get(hl,'Color');
+mrkStep = 15;
 text(dt(1:mrkStep:end), y{1}(1:mrkStep:end),'1','HorizontalAl','center','color',c{1})
 text(dt(1:mrkStep:end), y{2}(1:mrkStep:end),'1','HorizontalAl','center','color',c{1})
 text(dt(1:mrkStep:end), y{3}(1:mrkStep:end),'5','HorizontalAl','center','color',c{2})
@@ -403,7 +403,7 @@ set(hl(4),'Color',c{2})
 set(gca, 'TickLabelInterpreter','latex','Layer','Top',...
     'YScale','log','YLim',YLIM,'YTick',[1,2,4,8])
 
-print('xs_afternoon_on','-depsc','-r200','-loose')
+print('imom_xs_afternoon_on','-depsc','-r200','-loose')
 %% Alternative specifications
 getWML = @(signal,hpr) subsref(makeTsmom(getIntradayRet(signal), getIntradayRet(hpr)),struct('type','.','subs','ew_fun'));
 corr([getWML(specs.NINE_TO_NOON, specs.LAST_E),...
@@ -416,8 +416,8 @@ corr([getWML(specs.NINE_TO_NOON, specs.LAST_E),...
     getWML(specs.TEN_TO_ONE, specs.SLAST_E)],'rows','pairwise')
 
 NUM_PTF_UNI = 5;
-getXS = @(signal,hpr) portfolio_sort(getIntradayRet(hpr),getIntradayRet(signal),'PortfolioNumber',NUM_PTF_UNI);
-ptf = cat(3,getXS(specs.NINE_TO_NOON, specs.LAST_E),...
+getXS       = @(signal,hpr) portfolio_sort(getIntradayRet(hpr),getIntradayRet(signal),'PortfolioNumber',NUM_PTF_UNI);
+ptf         = cat(3,getXS(specs.NINE_TO_NOON, specs.LAST_E),...
     getXS(specs.NINE_TO_NOON, specs.LAST_V),...
     getXS(specs.TEN_TO_ONE, specs.LAST_E),...
     getXS(specs.FIRST, specs.LAST_E),...
@@ -425,8 +425,8 @@ ptf = cat(3,getXS(specs.NINE_TO_NOON, specs.LAST_E),...
     getXS(specs.NINE_TO_ONE, specs.AFTERNOON_V),...
     getXS(specs.NINE_TO_ONE, specs.SLAST_E),...
     getXS(specs.TEN_TO_ONE, specs.SLAST_E));
-tmp = arrayfun(@(x) corr(squeeze(ptf(:,x,:)),'rows','pairwise'),1:NUM_PTF_UNI,'un',0);
-tmp = nanmean(cat(3,tmp{:}),3)
+tmp         = arrayfun(@(x) corr(squeeze(ptf(:,x,:)),'rows','pairwise'),1:NUM_PTF_UNI,'un',0);
+tmp         = nanmean(cat(3,tmp{:}),3)
 %% Cost analysis
 
 load data_snapshot.mat
