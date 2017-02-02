@@ -447,6 +447,8 @@ dsf.BAspread = 2*(dsf.Ask-dsf.Bid)./(dsf.Ask+dsf.Bid);
 dsf.BAspread(dsf.BAspread < 0) = NaN;
 data.baspread = myunstack(dsf(:,{'Permno','Date','BAspread'}),'BAspread');
 data.baspread = data.baspread{:,2:end};
+data.baspread = [NaN(OPT_.DAY_LAG, size(data.baspread,2)); data.baspread(1:end-OPT_.DAY_LAG,:)];
+
 clear hl dsf
 
 % For table output
@@ -473,9 +475,9 @@ allspread = replace(spread, spread > prctile(spread, 100/N(1),2),NaN);
 
 pos    = 1:N(1):size(ptfret,2);
 [num2cell([nanmean([ptfret(:,pos)    nanmean(hpr,2)   ],1)
-           nanmean([avg_sig(:,pos,1) nanmean(allspread,2)],1)
-     round(nanmean([count(:,pos),    sum(count(:,pos),2)],1))])
-    mydisp(ptfdiff([ptfret(:,pos)    nanmean(hpr,2)], avg_sig(:,pos,1), nanmean(allspread,2)))]
+           nanmean([avg_sig(:,pos,1) nanmean(allspread,2)],1)])
+    mydisp(ptfdiff([ptfret(:,pos)    nanmean(hpr,2)], avg_sig(:,pos,1), nanmean(allspread,2)))
+ num2cell(round(nanmean([count(:,pos), sum(count(:,pos),2)],1)))]
 
 N = [20,5];
 [ptfret, ~, count, avg_sig] = portfolio_sort(hpr, {spread, signal},'PortfolioNumber',N);
@@ -485,9 +487,9 @@ allspread = replace(spread, spread > prctile(spread, 100/N(1),2),NaN);
 
 pos    = 1:N(1):size(ptfret,2);
 [num2cell([nanmean([ptfret(:,pos)    nanmean(hpr,2)   ],1)
-           nanmean([avg_sig(:,pos,1) nanmean(allspread,2)],1)
-     round(nanmean([count(:,pos),    sum(count(:,pos),2)],1))])
-    mydisp(ptfdiff([ptfret(:,pos)    nanmean(hpr,2)], avg_sig(:,pos,1), nanmean(allspread,2)))]
+           nanmean([avg_sig(:,pos,1) nanmean(allspread,2)],1)])
+    mydisp(ptfdiff([ptfret(:,pos)    nanmean(hpr,2)], avg_sig(:,pos,1), nanmean(allspread,2)))
+ num2cell(round(nanmean([count(:,pos), sum(count(:,pos),2)],1)))]
 
 %% Check Open/Close in TAQ vs CRSP
 OPT_NOMICRO            = true;
