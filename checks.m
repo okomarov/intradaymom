@@ -431,12 +431,6 @@ tmp         = nanmean(cat(3,tmp{:}),3)
 
 load data_snapshot.mat
 
-ptfret_xs                           = {}; stats_xs = {};
-[ptfret_xs{end+1}, stats_xs{end+1}] = estimateXSmom(specs.NINE_TO_NOON, specs.LAST_E,       data,dates,OPT_,true);
-[ptfret_xs{end+1}, stats_xs{end+1}] = estimateXSmom(specs.NINE_TO_NOON, specs.LAST_V,       data,dates,OPT_,false);
-[ptfret_xs{end+1}, stats_xs{end+1}] = estimateXSmom(specs.NINE_TO_ONE , specs.AFTERNOON_E, 	data,dates,OPT_,true);
-[ptfret_xs{end+1}, stats_xs{end+1}] = estimateXSmom(specs.NINE_TO_ONE , specs.AFTERNOON_V,  data,dates,OPT_,false);
-
 % % High-low spread by 2012 Corwin, Schults
 % hl                       = estimateHighLowSpread(OPT_.VOL_LAG);
 % [~,pos]                  = ismembIdDate(data.mst.Permno, data.mst.Date, hl.Permno, hl.Date);
@@ -451,87 +445,49 @@ dsf          = dsf(pos,:);
 dsf          = convertColumn(dsf,'double',{'Bid','Ask'});
 dsf.BAspread = 2*(dsf.Ask-dsf.Bid)./(dsf.Ask+dsf.Bid);
 dsf.BAspread(dsf.BAspread < 0) = NaN;
-spread.ba    = myunstack(dsf(:,{'Permno','Date','BAspread'}),'BAspread');
-spread.ba    = spread.ba{:,2:end};
+data.baspread = myunstack(dsf(:,{'Permno','Date','BAspread'}),'BAspread');
+data.baspread = data.baspread{:,2:end};
 clear hl dsf
 
-% Ptfret costs
-% [spread.hl_ptf,~,count] = portfolio_sort(spread.hl, getIntradayRet(specs.NINE_TO_NOON),'PortfolioNumber',OPT_.NUM_PTF_UNI);
-[spread.ba_ptf,~,count] = portfolio_sort(spread.ba, getIntradayRet(specs.NINE_TO_NOON),'PortfolioNumber',OPT_.NUM_PTF_UNI);
-
-% Threshold
-tmp = spread.ba;
-tmp(spread.ba > prctile(spread.ba, 10,2)) = NaN;
-[spread.ba_ptf,~,count] = portfolio_sort(tmp, getIntradayRet(specs.NINE_TO_NOON),'PortfolioNumber',5);
-
+% For table output
 ptfdiff = @(ret, cost, costall) ret - nan2zero([cost, costall]);
-
-% Table
 printse = @(retdiff) arrayfun(@(x)sprintf('[%.3f]',x), sqrt(nwse(retdiff)),'un',0);
 mydisp  = @(retdiff) [num2cell(nanmean(retdiff));  printse(retdiff)];
 
-[mydisp(ptfret_xs{1}{:,:});
- mydisp(ptfret_xs{3}{:,:});
- num2cell([nanmean(spread.hl_ptf,1), nanmean(nanmean(spread.hl,2),1)]); 
- num2cell([nanmean(spread.ba_ptf,1), nanmean(nanmean(spread.ba,2),1)]);
- mydisp(ptfdiff(ptfret_xs{1}{:,:}, spread.hl_ptf, nanmean(spread.hl,2)));
- mydisp(ptfdiff(ptfret_xs{1}{:,:}, spread.ba_ptf, nanmean(spread.ba,2)));
- mydisp(ptfret_xs{2}{:,:});
- mydisp(ptfdiff(ptfret_xs{2}{:,:}, spread.hl_ptf, nanmean(spread.hl,2)));
- mydisp(ptfdiff(ptfret_xs{2}{:,:}, spread.ba_ptf, nanmean(spread.ba,2)));
- mydisp(ptfret_xs{4}{:,:})]; 
+% Get specification
+signal = getIntradayRet(specs.NINE_TO_NOON);
+hpr    = getIntradayRet(specs.LAST_E)*100;
 
-% Figure last
-y  = [nanmean(ptfret_xs{1}{:,:},1); 
-      nanmean(ptfdiff(ptfret_xs{1}{:,:}, spread.hl_ptf, nanmean(spread.hl,2)),1);
-      nanmean(ptfret_xs{2}{:,:},1)];
-y  = [y(:,1:end-1) NaN(3,1) y(:,end)];
-se = 2*[stats_xs{1}{'Se',:}; 
-      sqrt(nwse(ptfdiff(ptfret_xs{1}{:,:}, spread.hl_ptf, nanmean(spread.hl,2))));
-      stats_xs{2}{'Se',:}]; 
-se = [se(:,1:end-1) NaN(3,1) se(:,end)];   
+% Select period
+idx    = in(dates,[19930101,99999999]);
+% idx    = in(dates,[20010501,99999999]);
+hpr    = hpr(idx,:);
+signal = signal(idx,:);
+spread = data.baspread(idx,:)*100;
 
-figure
-set(gcf, 'Position', get(gcf,'Position').*[1,1,1,0.4],'PaperPositionMode','auto')
-h      = bar(y',1,'grouped','LineStyle','none');
-styles = {'--s','-.^',':*'};
-hold on
-for ii = 1:numel(h)
-    errorbar(getBarCenter(h(ii)), y(ii,:), se(ii,:), styles{ii},'MarkerSize',5,'MarkerFaceColor','auto');
-end
-delete(h)
-XLIM = [0,13];
-h    = plot(XLIM, [0,0],'Color',[0.85,0.85,0.85]);
-uistack(h,'bottom');
-set(gca, 'TickLabelInterpreter','latex','Layer','Top',...
-    'YLim',[-0.02,0.1],'Ytick',0:0.03:0.09,'XLim',XLIM,'XTick',[1:10, 12],'XtickLabels',['Lose'; cellstr(num2str((2:9)')); 'Win'; 'All'])
-print('imom_cost_last','-depsc','-r200','-loose')
+N = [1,5];
+[ptfret, ~, count, avg_sig] = portfolio_sort(hpr, {spread, signal},'PortfolioNumber',N);
 
-% Figure afternoon
-y  = [nanmean(ptfret_xs{3}{:,:},1); 
-      nanmean(ptfdiff(ptfret_xs{3}{:,:}, spread.hl_ptf, nanmean(spread.hl,2)),1);
-      nanmean(ptfret_xs{4}{:,:},1)];
-y  = [y(:,1:end-1) NaN(3,1) y(:,end)];
-se = 2*[stats_xs{3}{'Se',:}; 
-      sqrt(nwse(ptfdiff(ptfret_xs{3}{:,:}, spread.hl_ptf, nanmean(spread.hl,2))));
-      stats_xs{4}{'Se',:}]; 
-se = [se(:,1:end-1) NaN(3,1) se(:,end)];   
+% Cheapest group, set the rest to NaN (for overall average)
+allspread = replace(spread, spread > prctile(spread, 100/N(1),2),NaN);
 
-figure
-set(gcf, 'Position', get(gcf,'Position').*[1,1,1,0.4],'PaperPositionMode','auto')
-h      = bar(y',1,'grouped','LineStyle','none');
-styles = {'--s','-.^',':*'};
-hold on
-for ii = 1:numel(h)
-    errorbar(getBarCenter(h(ii)), y(ii,:), se(ii,:), styles{ii},'MarkerSize',5,'MarkerFaceColor','auto');
-end
-delete(h)
-XLIM = [0,13];
-h    = plot(XLIM, [0,0],'Color',[0.85,0.85,0.85]);
-uistack(h,'bottom');
-set(gca, 'TickLabelInterpreter','latex','Layer','Top',...
-    'YLim',[-0.06,0.1],'Ytick',-0.04:0.04:0.08,'XLim',XLIM,'XTick',[1:10, 12],'XtickLabels',['Lose'; cellstr(num2str((2:9)')); 'Win'; 'All'])
-print('imom_cost_afternoon','-depsc','-r200','-loose')
+pos    = 1:N(1):size(ptfret,2);
+[num2cell([nanmean([ptfret(:,pos)    nanmean(hpr,2)   ],1)
+           nanmean([avg_sig(:,pos,1) nanmean(allspread,2)],1)
+     round(nanmean([count(:,pos),    sum(count(:,pos),2)],1))])
+    mydisp(ptfdiff([ptfret(:,pos)    nanmean(hpr,2)], avg_sig(:,pos,1), nanmean(allspread,2)))]
+
+N = [20,5];
+[ptfret, ~, count, avg_sig] = portfolio_sort(hpr, {spread, signal},'PortfolioNumber',N);
+
+% Cheapest group, set the rest to NaN (for overall average)
+allspread = replace(spread, spread > prctile(spread, 100/N(1),2),NaN);
+
+pos    = 1:N(1):size(ptfret,2);
+[num2cell([nanmean([ptfret(:,pos)    nanmean(hpr,2)   ],1)
+           nanmean([avg_sig(:,pos,1) nanmean(allspread,2)],1)
+     round(nanmean([count(:,pos),    sum(count(:,pos),2)],1))])
+    mydisp(ptfdiff([ptfret(:,pos)    nanmean(hpr,2)], avg_sig(:,pos,1), nanmean(allspread,2)))]
 
 %% Check Open/Close in TAQ vs CRSP
 OPT_NOMICRO            = true;
